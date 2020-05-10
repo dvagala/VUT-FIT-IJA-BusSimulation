@@ -1,0 +1,60 @@
+<project name="IJA" basedir="." default="main">
+
+    <property name="src" value="src"/>
+    <property name="build" value="build"/>
+    <property name="doc" value="doc"/>
+    <property name="dest" value="dest"/>
+
+    <property name="main-class"  value="Main"/>
+
+    <target name="clean">
+        <delete dir="${build}"/>
+    </target>
+
+    <target name="clean-doc">
+        <delete dir="${doc}"/>
+    </target>
+
+    <target name="compile-classes" depends="clean">
+        <mkdir dir="${build}"/>
+        <javac srcdir="${src}" destdir="${build}" debug="true" includeantruntime="false"></javac>
+        <copy todir="${build}">
+            <fileset dir="${src}" includes="**/*.fxml"></fileset>
+            <fileset dir="${src}" includes="**/*.css"></fileset>
+        </copy>
+    </target>
+
+    <target name="compile" depends="compile-classes">
+        <mkdir dir="${dest}"/>
+        <jar destfile="${dest}/ija-client.jar" basedir="${build}">
+            <manifest><attribute name="Main-Class" value="${main-class}"/></manifest>
+        </jar>
+    </target>
+
+    <target name="doc" depends="clean-doc">
+        <mkdir dir="${doc}"/>
+        <javadoc locale="cs_CZ"
+            packagenames="blocks, gui, connections, repository, connections.dataTypes"
+            sourcepath="src"
+            excludepackagenames=""
+            defaultexcludes="yes"
+            destdir="${doc}"
+            author="true"
+            version="true"
+            use="true"
+            windowtitle="IJA PROJEKT"
+            charset="UTF-8">
+            <doctitle><![CDATA[<h1>IJA PROJEKT</h1>]]></doctitle>
+            <bottom><![CDATA[<i>Autor: David Hříbek, Dominik Ruta</i>]]></bottom>
+        </javadoc>
+    </target>
+
+    <target name="run" depends="compile">
+        <java jar="${dest}/ija-client.jar" fork="true"/>
+    </target>
+
+    <target name="clean-build" depends="clean,compile"/>
+
+    <target name="main" depends="clean,run"/>
+
+</project>

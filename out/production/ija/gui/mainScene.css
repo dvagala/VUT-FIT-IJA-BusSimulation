@@ -1,0 +1,25 @@
+.factories-field {
+    /*-fx-background-color: rgb(200,200,200);*/
+    -fx-background-image: url("/images/ground.png");
+    -fx-background-repeat: repeat;
+    -fx-background-size: 240;
+    /*-fx-background-color: red;*/
+}
+.input-ports {
+    -fx-alignment: center;
+}
+.output-ports {
+    -fx-alignment: center;
+}
+
+.connection {
+}
+
+.factories-menu {
+    -fx-background-color: #05896b;
+    -fx-padding: 10;
+}
+.info-pane {
+    -fx-background-color: #05896b;
+    /*-fx-background-image: url("/project/gui/resources/ground.png");*/
+}
