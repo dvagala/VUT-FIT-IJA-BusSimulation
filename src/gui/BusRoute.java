@@ -22,20 +22,25 @@ class BusRoute {
 
     private List<BusStop> stops = new ArrayList<>();
     private List<RouteSchedule> routeSchedules = new ArrayList<>();
-    private Paint color = Color.rgb(255, 0, 0, 0.3);
 
-    public String getName() {
-        return name;
+    public Paint getColor() {
+        return color;
     }
 
-    private String name;
+    private Color color = Color.rgb(255, 0, 0);
+
+    public int getRouteNumber() {
+        return routeNumber;
+    }
+
+    private int routeNumber;
 
     public BusRoute(List<IRoutePoint> routePoints) {
         this.routePoints = routePoints;
     }
 
-    public BusRoute(String name, List<IRoutePoint> routePoints) {
-        this.name = name;
+    public BusRoute(int routeNumber, List<IRoutePoint> routePoints) {
+        this.routeNumber = routeNumber;
         this.routePoints = routePoints;
 
         for(IRoutePoint routePoint : routePoints){
@@ -57,7 +62,7 @@ class BusRoute {
         routePoints.add(routePoint);
     }
 
-    public void setColor(Paint color) {
+    public void setColor(Color color) {
         this.color = color;
     }
 
@@ -69,8 +74,11 @@ class BusRoute {
             IRoutePoint first = routePoints.get(i);
             IRoutePoint second = routePoints.get(i+1);
 
+
             Line line = new Line(first.getX(), first.getY(), second.getX(), second.getY());
-            line.setStroke(this.color);
+
+            Color opaqueColor = new Color(color.getRed(), color.getGreen(), color.getBlue(), 0.0);
+            line.setStroke(opaqueColor);
             line.setStrokeWidth(7);
             shapes.add(line);
         }

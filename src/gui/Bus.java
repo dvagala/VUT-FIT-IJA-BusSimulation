@@ -4,6 +4,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Shape;
 import javafx.scene.text.Text;
@@ -16,7 +17,7 @@ class Bus extends Coordinate{
 
     private BusRoute busRoute;
 
-    private double speedPixelsPerSecond = 3;
+    private double speedPixelsPerSecond = 2;
     int busCircleSize = 7;
 
     double travelledDistance = 0;
@@ -29,13 +30,15 @@ class Bus extends Coordinate{
 
 
     public Node getNode() {
+
         if(node == null){
-            Shape circle = new Circle(this.getX(), this.getY(), busCircleSize, Color.BLUE);
-//        circle.setId(busRoute.getName() + "_" + StartTime.toString());
+            Paint color = busRoute.getColor();
+            Shape circle = new Circle(this.getX(), this.getY(), busCircleSize, busRoute.getColor());
 
             VBox vBox = new VBox();
             vBox.getChildren().add(circle);
-//            vBox.getChildren().add(new Text(this.getX() - busCircleSize*4, this.getY() + busCircleSize*4, "hee"));
+            Text text = new Text(this.getX() - busCircleSize*4, this.getY() + busCircleSize*4, String.valueOf(busRoute.getRouteNumber()));
+            vBox.getChildren().add(text);
             vBox.setLayoutX(this.getX() - busCircleSize);
             vBox.setLayoutY(this.getY() - busCircleSize);
             vBox.setAlignment(Pos.TOP_LEFT);

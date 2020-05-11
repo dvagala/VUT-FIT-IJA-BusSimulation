@@ -25,7 +25,7 @@ public class MainController  implements Initializable {
     @FXML
     private Text clockText;
 
-    double simulationSpeedRatio = 60;
+    double simulationSpeedRatio = 90;
 
     private LocalTime localTime = LocalTime.of(10, 29, 0, 0);
     int updateIntervalMs = 200;
@@ -88,6 +88,8 @@ public class MainController  implements Initializable {
 
     private void setUpData(){
 
+
+
         Street street = new Street(Arrays.asList(new Coordinate(50, 50)));
         street.addCoordinate(new Coordinate(200, 50));
         street.addCoordinate(new Coordinate(300, 200));
@@ -106,11 +108,18 @@ public class MainController  implements Initializable {
         street3.addCoordinate(new Coordinate(500, 100));
         street3.setColor(Color.ORANGE);
 
-        BusStop busStop = new BusStop(new Coordinate(100, 50));
-        BusStop busStop2 = new BusStop(new Coordinate(260, 140));
-        BusStop busStop3 = new BusStop(new Coordinate(520, 100));
+        List<Street> streets = Arrays.asList(
+                street, street2, street3
+        );
 
-        BusRoute busRoute = new BusRoute("first route",
+
+        BusStop busStop = new BusStop(new Coordinate(100, 50), "husitska");
+        BusStop busStop2 = new BusStop(new Coordinate(260, 140), "ceska");
+        BusStop busStop3 = new BusStop(new Coordinate(520, 100), "semilasso");
+
+
+
+        BusRoute busRoute = new BusRoute(3,
                 Arrays.asList(
                         busStop,
                         street.getCoordinate(1),
@@ -123,7 +132,7 @@ public class MainController  implements Initializable {
                         busStop3
                 ));
 
-        busRoute.setColor(Color.rgb(255, 0, 0, 0.3));
+        busRoute.setColor(Color.rgb(255, 0, 0));
 
         busRoute.setRouteSchedules(Arrays.asList(new RouteSchedule(Arrays.asList(
                 LocalTime.of(10, 30),
@@ -133,20 +142,62 @@ public class MainController  implements Initializable {
 
         busRoutes.add(busRoute);
 
-        mapPane.getChildren().addAll(street.getUiElements());
-        mapPane.getChildren().addAll(street2.getUiElements());
-        mapPane.getChildren().addAll(street3.getUiElements());
-        mapPane.getChildren().addAll(busStop.getUiElement());
-        mapPane.getChildren().addAll(busStop2.getUiElement());
-        mapPane.getChildren().addAll(busStop3.getUiElement());
-        mapPane.getChildren().addAll(busRoute.getUiElements());
+        BusStop busStop4 = new BusStop(new Coordinate(200, 300), "cervinkova");
+        BusStop busStop5 = new BusStop(new Coordinate(400, 140), "skacelka");
+        BusStop busStop6 = new BusStop(new Coordinate(440, 250), "dobrovskeho");
+
+        BusRoute busRoute2 = new BusRoute(5,
+                Arrays.asList(
+                        busStop4,
+                        street2.getCoordinate(1),
+                        street2.getCoordinate(0),
+
+                        street.getCoordinate(2),
+                        busStop2,
+                        street.getCoordinate(2),
 
 
-//        mapPane.getChildren().remove
+                        street.getCoordinate(3),
+                        busStop5,
+                        street.getCoordinate(4),
+                        street3.getCoordinate(2),
+                        street3.getCoordinate(1),
+                        busStop6
+                ));
+
+
+        busRoute2.setColor(Color.rgb(0, 0, 255));
+
+        busRoute2.setRouteSchedules(Arrays.asList(new RouteSchedule(Arrays.asList(
+                LocalTime.of(10, 35),
+                LocalTime.of(10, 40),
+                LocalTime.of(10, 45),
+                LocalTime.of(10, 50)
+        ))));
+
+        busRoutes.add(busRoute2);
+
+        List<BusStop> busStops = Arrays.asList(
+                busStop, busStop2, busStop3, busStop4, busStop5, busStop6
+        );
+
+
+
+        for(Street s : streets){
+            mapPane.getChildren().addAll(s.getUiElements());
+        }
+
+        for(BusStop s : busStops){
+            mapPane.getChildren().addAll(s.getUiElement());
+        }
+
+        for(BusRoute route : busRoutes){
+            mapPane.getChildren().addAll(route.getUiElements());
+        }
+
+
     }
 
-    @FXML
-    public Button btn;
 
     @FXML
     public Pane mapPane;
