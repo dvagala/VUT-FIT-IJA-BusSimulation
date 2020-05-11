@@ -12,20 +12,10 @@ public class Main extends Application {
     }
 
     public void start(Stage primaryStage) throws Exception {
-
         Parent root = FXMLLoader.load(getClass().getResource("gui/scene.fxml"));
-
         Scene scene = new Scene(root, 1280, 720);
-//        scene.getStylesheets().add("gui/mainScene.css");
         primaryStage.setScene(scene);
         primaryStage.setTitle("Factory Builder");
         primaryStage.show();
-
-
-
-    }
-
-    public int getInt(){
-        return 1;
     }
 }

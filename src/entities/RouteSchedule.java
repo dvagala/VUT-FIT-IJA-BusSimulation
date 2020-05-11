@@ -1,9 +1,9 @@
-package gui;
+package entities;
 
 import java.time.LocalTime;
 import java.util.List;
 
-class RouteSchedule {
+public class RouteSchedule {
 
    private List<LocalTime> departures;
 

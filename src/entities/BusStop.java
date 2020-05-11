@@ -1,22 +1,15 @@
-package gui;
+package entities;
 
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
-import javafx.scene.shape.Line;
 import javafx.scene.shape.Polygon;
-import javafx.scene.shape.Shape;
 import javafx.scene.text.Text;
 
-import java.util.ArrayList;
-import java.util.List;
+public class BusStop extends Coordinate {
 
-class BusStop extends Coordinate{
-//    private Coordinate coordinate = new Coordinate();
-    private String name = "def Stop";
+    private final String name;
 
     public BusStop(Coordinate coordinate, String name) {
         this.setX(coordinate.getX());
@@ -24,16 +17,7 @@ class BusStop extends Coordinate{
         this.name = name;
     }
 
-    public BusStop() {
-    }
-
-    public BusStop(Coordinate coordinate) {
-        this.setX(coordinate.getX());
-        this.setY(coordinate.getY());
-    }
-
-
-    public Node getUiElement(){
+    public Node getNode(){
         int size = 6;
         Polygon polygon = new Polygon(this.getX()-size, this.getY() + size, this.getX()+size, this.getY() + size, this.getX(), this.getY() - size );
         polygon.setFill(Color.BLUE);

@@ -1,6 +1,7 @@
-package gui;
+package entities;
 
-interface IRoutePoint{
+//
+public interface IRoutePoint{
     int getX();
     int getY();
     void setX(int x);

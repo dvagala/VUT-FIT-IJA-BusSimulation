@@ -2,36 +2,36 @@
 package gui;
 
 
+import entities.*;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
+import misc.SimulationSettings;
 
 import java.net.URL;
 import java.time.LocalTime;
 import java.util.*;
 
+import static java.time.temporal.ChronoUnit.MINUTES;
+
 public class MainController  implements Initializable {
-
-    public List<IMapElement> mapElements = new ArrayList<>();
-
-    private Timer timer = new Timer();
 
     @FXML
     private Text clockText;
 
-    double simulationSpeedRatio = 90;
+    @FXML
+    public Pane mapPane;
 
-    private LocalTime localTime = LocalTime.of(10, 29, 0, 0);
-    int updateIntervalMs = 200;
+    @FXML
+    public ScrollPane scrollPane;
 
+    private LocalTime currentTime = SimulationSettings.startTime;
     List<BusRoute> busRoutes = new ArrayList<>();
-
     List<Bus> visibleBuses = new ArrayList<>();
 
     @Override
@@ -46,36 +46,34 @@ public class MainController  implements Initializable {
 
         this.setUpData();
 
+        Timer timer = new Timer();
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                clockText.setText(localTime.toString());
-
-                placeBusesOnMapIfItsTime();
+//                System.out.println("neu frame");
+                clockText.setText(currentTime.toString());
+                handleBusesVisibilityOnMap();
 
                 for(Bus visibleBus : visibleBuses){
-                    visibleBus.updateNodePosition(localTime, updateIntervalMs, simulationSpeedRatio);
+                    visibleBus.updateNodePosition(currentTime);
                 }
 
-
-                localTime = localTime.plusNanos((long) (updateIntervalMs*1000000*simulationSpeedRatio));
+                currentTime = currentTime.plusNanos((long) (SimulationSettings.updateIntervalMs*1000000*SimulationSettings.speedRatio));
             }
-        }, 0, updateIntervalMs);
+        }, 0, SimulationSettings.updateIntervalMs);
 
     }
 
-    private void placeBusesOnMapIfItsTime(){
+    private void handleBusesVisibilityOnMap(){
         for(BusRoute busRoute : busRoutes){
             for(RouteSchedule routeSchedule : busRoute.getRouteSchedules()){
-                if(localTime.compareTo(routeSchedule.getFirstStopDeparture()) > 0 && localTime.compareTo(routeSchedule.getLastStopDeparture()) < 0){
+                if(currentTime.until(routeSchedule.getFirstStopDeparture(), MINUTES) < Bus.waitAtFirstStopMinutes && currentTime.compareTo(routeSchedule.getLastStopDeparture()) < 0){
                     if(Bus.getVisibleBusByRoute(visibleBuses, busRoute) == null){
                         Bus bus = new Bus(busRoute);
                         visibleBuses.add(bus);
-                        Platform.runLater(() -> {
-                            mapPane.getChildren().add(bus.getNode());
-                        });
+                        Platform.runLater(() -> mapPane.getChildren().add(bus.getNode()));
                     }
-                }else if(localTime.compareTo(routeSchedule.getLastStopDeparture()) > 0){
+                }else if(currentTime.compareTo(routeSchedule.getLastStopDeparture()) > 0){
                     Bus bus = Bus.getVisibleBusByRoute(visibleBuses, busRoute);
                     if(bus != null){
                         visibleBuses.remove(bus);
@@ -87,9 +85,6 @@ public class MainController  implements Initializable {
     }
 
     private void setUpData(){
-
-
-
         Street street = new Street(Arrays.asList(new Coordinate(50, 50)));
         street.addCoordinate(new Coordinate(200, 50));
         street.addCoordinate(new Coordinate(300, 200));
@@ -184,26 +179,20 @@ public class MainController  implements Initializable {
 
 
         for(Street s : streets){
-            mapPane.getChildren().addAll(s.getUiElements());
+            mapPane.getChildren().addAll(s.getNodes());
         }
 
         for(BusStop s : busStops){
-            mapPane.getChildren().addAll(s.getUiElement());
+            mapPane.getChildren().addAll(s.getNode());
         }
 
         for(BusRoute route : busRoutes){
-            mapPane.getChildren().addAll(route.getUiElements());
+            mapPane.getChildren().addAll(route.getNodes());
         }
 
 
     }
 
-
-    @FXML
-    public Pane mapPane;
-
-    @FXML
-    public ScrollPane scrollPane;
 
 
 }
