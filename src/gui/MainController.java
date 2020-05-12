@@ -14,7 +14,13 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import misc.SimulationSettings;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.*;
 
+
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.URL;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -129,90 +135,70 @@ public class MainController  implements Initializable{
         }
 
     }
+    private int into(Object x){ //Long to int
+        return ((Long)x).intValue();
+    }
 
-    private void setUpData(){
-        Street street = new Street(Arrays.asList(new Coordinate(50, 50)));
-        street.addCoordinate(new Coordinate(200, 50));
-        street.addCoordinate(new Coordinate(300, 200));
-        street.addCoordinate(new Coordinate(400, 200));
-        street.addCoordinate(new Coordinate(400, 100));
-        street.addCoordinate(new Coordinate(550, 100));
-        street.setColor(Color.GREEN);
+    private void setUpData() {
+        JSONObject jo = new JSONObject();
+        JSONParser parser = new JSONParser();
+        try {
+            Object obj = parser.parse(new FileReader("data.json"));
+            jo = (JSONObject) obj;
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        JSONObject jStreets = (JSONObject) jo.get("streets");
+        JSONObject jBusStops = (JSONObject) jo.get("busStops");
+        JSONObject jBusRoutes = (JSONObject) jo.get("busRoutes");
 
-        Street street2 = new Street(Arrays.asList(new Coordinate(350, 200)));
-        street2.addCoordinate(new Coordinate(350, 300));
-        street2.addCoordinate(new Coordinate(150, 300));
-        street2.setColor(Color.RED);
-
-        Street street3 = new Street(Arrays.asList(new Coordinate(350, 250)));
-        street3.addCoordinate(new Coordinate(500, 250));
-        street3.addCoordinate(new Coordinate(500, 100));
-        street3.setColor(Color.ORANGE);
-
-        List<Street> streets = Arrays.asList(
-                street, street2, street3
-        );
+        List<Street> streets = new ArrayList<>();
+        List<BusStop> busStops = new ArrayList<>();
 
 
-        BusStop busStop = new BusStop(new Coordinate(100, 50), "husitska");
-        BusStop busStop2 = new BusStop(new Coordinate(260, 140), "ceska");
-        BusStop busStop3 = new BusStop(new Coordinate(520, 100), "semilasso");
+        for (Object var : jStreets.keySet()){
+            JSONObject s = (JSONObject) jStreets.get(var); //street
+            ArrayList<JSONArray> coors = (ArrayList<JSONArray>) s.get("coors");
+            List<Coordinate> coordinates = new ArrayList<>();
+            for (JSONArray jC: coors){
+                Coordinate c = new Coordinate(into(jC.get(0)), into(jC.get(1))); //x,y value of coord
+                coordinates.add(c);
+            }
+            Street street = new Street(coordinates);
+            street.setColor(Color.valueOf((String) s.get("color")));
+            streets.add(street);
+        }
 
+        for (Object var: jBusStops.keySet()){
+            JSONObject jBusStop = (JSONObject) jBusStops.get(var);
+            JSONArray jC = (JSONArray) jBusStop.get("c");
+            BusStop busStop = new BusStop(new Coordinate(into(jC.get(0)), into(jC.get(1))), (String) jBusStop.get("name"));
+            busStops.add(busStop);
+        }
 
-
-        BusRoute busRoute = new BusRoute(3,
-                Arrays.asList(
-                        busStop,
-                        street.getCoordinate(1),
-                        busStop2,
-                        street.getCoordinate(2),
-                        street2.getCoordinate(0),
-                        street3.getCoordinate(0),
-                        street3.getCoordinate(1),
-                        street3.getCoordinate(2),
-                        busStop3
-                ));
-
-        busRoute.setColor(Color.rgb(255, 0, 0));
-
-        busRoute.setRouteSchedulesByFirstDepartureTimes(Arrays.asList(
-                LocalTime.of(10, 30)
-        ));
-
-        busRoutes.add(busRoute);
-
-        BusStop busStop4 = new BusStop(new Coordinate(200, 300), "cervinkova");
-        BusStop busStop5 = new BusStop(new Coordinate(400, 140), "skacelka");
-        BusStop busStop6 = new BusStop(new Coordinate(440, 250), "dobrovskeho");
-
-        BusRoute busRoute2 = new BusRoute(5,
-                Arrays.asList(
-                        busStop4,
-                        street2.getCoordinate(1),
-                        street2.getCoordinate(0),
-                        street.getCoordinate(2),
-                        busStop2,
-                        street.getCoordinate(2),
-                        street.getCoordinate(3),
-                        busStop5,
-                        street.getCoordinate(4),
-                        street3.getCoordinate(2),
-                        street3.getCoordinate(1),
-                        busStop6
-                ));
-
-
-        busRoute2.setColor(Color.rgb(0, 0, 255));
-        busRoute2.setRouteSchedulesByFirstDepartureTimes(Arrays.asList(
-                LocalTime.of(10, 33),
-                LocalTime.of(10, 40)
-        ));
-
-        busRoutes.add(busRoute2);
-
-        List<BusStop> busStops = Arrays.asList(
-                busStop, busStop2, busStop3, busStop4, busStop5, busStop6
-        );
+        for (Object var: jBusRoutes.keySet()) {
+            JSONObject jBusRoute = (JSONObject) jBusRoutes.get(var);
+            List<IRoutePoint> data = new ArrayList <>();
+            for (JSONArray a : (ArrayList<JSONArray>) jBusRoute.get("data")){
+                int x = into(a.get(1)); // value contains idx of busStop or street
+                int y = into(a.get(2)); // value says which streetCoordinate should be used
+                if(a.get(0).equals("b")){ // if bus, else street
+                    data.add(busStops.get(x));
+                }else{
+                    data.add(streets.get(x).getCoordinate(y));
+                }
+            }
+            BusRoute busRoute = new BusRoute(into(jBusRoute.get("id")), data);
+            busRoute.setColor(Color.valueOf((String) jBusRoute.get("color")));
+            ArrayList<LocalTime> localTimes = new ArrayList <>();
+            for (JSONArray s : (ArrayList<JSONArray>) jBusRoute.get("schedules")){
+                localTimes.add(LocalTime.of(into(s.get(0)),into(s.get(1))));
+            }
+            busRoute.setRouteSchedulesByFirstDepartureTimes(localTimes);
+            busRoutes.add(busRoute);
+        }
 
         for(Street s : streets){
             mapPane.getChildren().addAll(s.getNodes());
