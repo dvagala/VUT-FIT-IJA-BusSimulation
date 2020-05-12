@@ -177,13 +177,11 @@ public class Bus extends Coordinate {
         return null;
     }
 
-    public static Bus getVisibleBusByRouteAndStartTime(List<Bus> visibleBuses, BusRoute busRoute, LocalTime firstStopDeparture) {
+    public static Bus getVisibleBusByRouteAndSchedule(List<Bus> visibleBuses, BusRoute busRoute, RouteSchedule routeSchedule) {
         for(Bus visibleBus : visibleBuses){
             if(visibleBus.busRoute == busRoute){
-                for(RouteSchedule routeSchedule : visibleBus.busRoute.getRouteSchedules()){
-                    if(routeSchedule.getFirstStopDepartureTime() == firstStopDeparture){
-                        return visibleBus;
-                    }
+                if(visibleBus.currentRouteSchedule == routeSchedule){
+                    return visibleBus;
                 }
             }
         }

@@ -68,13 +68,15 @@ public class MainController  implements Initializable{
         for(BusRoute busRoute : busRoutes){
             for(RouteSchedule routeSchedule : busRoute.getRouteSchedules()){
                 if(currentTime.until(routeSchedule.getFirstStopDepartureTime(), MINUTES) < Bus.waitAtFirstStopMinutes && currentTime.compareTo(routeSchedule.getLastStopDepartureTime()) < 0){
-                    if(Bus.getVisibleBusByRouteAndStartTime(visibleBuses, busRoute, routeSchedule.getFirstStopDepartureTime()) == null){
+//                    System.out.println("maybe add neu bus");
+                    if(Bus.getVisibleBusByRouteAndSchedule(visibleBuses, busRoute, routeSchedule) == null){
+                        System.out.println("add neu bus");
                         Bus bus = new Bus(busRoute, routeSchedule);
                         bus.setOnBusClickListener(new Bus.OnBusClickListener() {
                             @Override
                             public void busWasClicked() {
                                 for(Bus b : visibleBuses){
-                                    if(b != bus){
+                                    if(b.getBusRoute() != bus.getBusRoute()){
                                         b.getBusRoute().getNode().setOpacity(0.0);
                                     }
                                 }
@@ -84,7 +86,7 @@ public class MainController  implements Initializable{
                         Platform.runLater(() -> mapPane.getChildren().add(bus.getNode()));
                     }
                 }else if(currentTime.compareTo(routeSchedule.getLastStopDepartureTime()) > 0){
-                    Bus bus = Bus.getVisibleBusByRouteAndStartTime(visibleBuses, busRoute, routeSchedule.getFirstStopDepartureTime());
+                    Bus bus = Bus.getVisibleBusByRouteAndSchedule(visibleBuses, busRoute, routeSchedule);
                     if(bus != null){
                         visibleBuses.remove(bus);
                         Platform.runLater(() -> mapPane.getChildren().remove(bus.getNode()));
@@ -178,7 +180,15 @@ public class MainController  implements Initializable{
                 new RouteScheduleEntry(busStop2, LocalTime.of(10, 40)),
                 new RouteScheduleEntry(busStop5, LocalTime.of(10, 45)),
                 new RouteScheduleEntry(busStop6, LocalTime.of(10, 50))
-        ))));
+        )),
+                new RouteSchedule(Arrays.asList(
+                        new RouteScheduleEntry(busStop4, LocalTime.of(10, 40)),
+                        new RouteScheduleEntry(busStop2, LocalTime.of(10, 45)),
+                        new RouteScheduleEntry(busStop5, LocalTime.of(10, 50)),
+                        new RouteScheduleEntry(busStop6, LocalTime.of(10, 55))
+                ))
+            ));
+
 
         busRoutes.add(busRoute2);
 
