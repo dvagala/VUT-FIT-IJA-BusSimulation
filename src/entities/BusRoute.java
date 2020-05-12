@@ -1,17 +1,16 @@
 package entities;
 
 
-import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
-import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
-import javafx.scene.paint.Paint;
 import javafx.scene.shape.Line;
 import misc.ColorHelper;
-import sun.nio.fs.GnomeFileTypeDetector;
 
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class BusRoute {
@@ -19,14 +18,14 @@ public class BusRoute {
 
 
     private final List<IRoutePoint> routePoints;
-    private List<BusStop> stackPane = new ArrayList<>();
+    private List<BusStop> busStops = new ArrayList<>();
     private List<RouteSchedule> routeSchedules = new ArrayList<>();
     private Color color = Color.rgb(255, 0, 0);
     private final int routeNumber;
     private Node node = null;
 
     public List<BusStop> getStops() {
-        return stackPane;
+        return busStops;
     }
 
     public List<IRoutePoint> getRoutePoints() {
@@ -47,7 +46,7 @@ public class BusRoute {
 
         for(IRoutePoint routePoint : routePoints){
             if(routePoint instanceof BusStop){
-                stackPane.add((BusStop) routePoint);
+                busStops.add((BusStop) routePoint);
             }
         }
     }
@@ -120,4 +119,38 @@ public class BusRoute {
 
         return 0;
     }
+
+    public void setRouteSchedulesByFirstDepartureTimes(List<LocalTime> firstStopDepartureTimes){
+
+        for (LocalTime firstDepartureTime : firstStopDepartureTimes){
+
+            List<RouteScheduleEntry> entries = new ArrayList<>();
+            entries.add(new RouteScheduleEntry(busStops.get(0), firstDepartureTime));
+
+            LocalTime lastStopDepartureTime = firstDepartureTime;
+            double distanceBetweenStops = 0;
+
+            IRoutePoint a = null;
+            IRoutePoint b = null;
+            for (int i = 0; i < routePoints.size() - 1; i++) {
+                a = routePoints.get(i);
+                b = routePoints.get(i+1);
+
+                distanceBetweenStops += getDistanceBetweenRoutePoints(a,b);
+
+                if(b instanceof BusStop){
+                    int secondsBetweenStops = (int) (distanceBetweenStops/Bus.speedPixelsPerSecond);
+
+                    LocalTime calculatedDepartureTime = lastStopDepartureTime.plusSeconds(secondsBetweenStops + Bus.minutesToWaitAtStopAtLeast*60);
+                    LocalTime calculatedDepartureTimeRounded = calculatedDepartureTime.truncatedTo(ChronoUnit.MINUTES).plusMinutes(1);
+
+                    entries.add(new RouteScheduleEntry((BusStop) b, calculatedDepartureTimeRounded));
+                    lastStopDepartureTime = calculatedDepartureTime;
+                    distanceBetweenStops = 0;
+                }
+            }
+            routeSchedules.add(new RouteSchedule(entries));
+        }
+    }
+
 }

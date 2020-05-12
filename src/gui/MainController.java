@@ -6,10 +6,8 @@ import entities.*;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
@@ -90,10 +88,8 @@ public class MainController  implements Initializable{
     private void handleBusesVisibilityOnMap(){
         for(BusRoute busRoute : busRoutes){
             for(RouteSchedule routeSchedule : busRoute.getRouteSchedules()){
-                if(currentTime.until(routeSchedule.getFirstStopDepartureTime(), MINUTES) < Bus.waitAtFirstStopMinutes && currentTime.compareTo(routeSchedule.getLastStopDepartureTime()) < 0){
-//                    System.out.println("maybe add neu bus");
+                if(currentTime.until(routeSchedule.getFirstStopDepartureTime(), MINUTES) < Bus.minutesToWaitAtStopAtLeast && currentTime.compareTo(routeSchedule.getLastStopDepartureTime()) < 0){
                     if(Bus.getVisibleBusByRouteAndSchedule(visibleBuses, busRoute, routeSchedule) == null){
-                        System.out.println("add neu bus");
                         Bus bus = new Bus(busRoute, routeSchedule);
                         bus.setOnBusClickListener(new Bus.OnBusClickListener() {
                             @Override
@@ -179,11 +175,9 @@ public class MainController  implements Initializable{
 
         busRoute.setColor(Color.rgb(255, 0, 0));
 
-        busRoute.setRouteSchedules(Arrays.asList(new RouteSchedule(Arrays.asList(
-                new RouteScheduleEntry(busStop, LocalTime.of(10, 30)),
-                new RouteScheduleEntry(busStop2, LocalTime.of(10, 35)),
-                new RouteScheduleEntry(busStop3, LocalTime.of(10, 45))
-        ))));
+        busRoute.setRouteSchedulesByFirstDepartureTimes(Arrays.asList(
+                LocalTime.of(10, 30)
+        ));
 
         busRoutes.add(busRoute);
 
@@ -196,12 +190,9 @@ public class MainController  implements Initializable{
                         busStop4,
                         street2.getCoordinate(1),
                         street2.getCoordinate(0),
-
                         street.getCoordinate(2),
                         busStop2,
                         street.getCoordinate(2),
-
-
                         street.getCoordinate(3),
                         busStop5,
                         street.getCoordinate(4),
@@ -212,29 +203,16 @@ public class MainController  implements Initializable{
 
 
         busRoute2.setColor(Color.rgb(0, 0, 255));
-
-        busRoute2.setRouteSchedules(Arrays.asList(new RouteSchedule(Arrays.asList(
-                new RouteScheduleEntry(busStop4, LocalTime.of(10, 33)),
-                new RouteScheduleEntry(busStop2, LocalTime.of(10, 40)),
-                new RouteScheduleEntry(busStop5, LocalTime.of(10, 45)),
-                new RouteScheduleEntry(busStop6, LocalTime.of(10, 50))
-        )),
-                new RouteSchedule(Arrays.asList(
-                        new RouteScheduleEntry(busStop4, LocalTime.of(10, 40)),
-                        new RouteScheduleEntry(busStop2, LocalTime.of(10, 45)),
-                        new RouteScheduleEntry(busStop5, LocalTime.of(10, 50)),
-                        new RouteScheduleEntry(busStop6, LocalTime.of(10, 55))
-                ))
-            ));
-
+        busRoute2.setRouteSchedulesByFirstDepartureTimes(Arrays.asList(
+                LocalTime.of(10, 33),
+                LocalTime.of(10, 40)
+        ));
 
         busRoutes.add(busRoute2);
 
         List<BusStop> busStops = Arrays.asList(
                 busStop, busStop2, busStop3, busStop4, busStop5, busStop6
         );
-
-
 
         for(Street s : streets){
             mapPane.getChildren().addAll(s.getNodes());
@@ -251,7 +229,7 @@ public class MainController  implements Initializable{
 
     }
 
-    public void onCloseDeparturesBtnClick(MouseEvent mouseEvent) {
+    public void onCloseDeparturesBtnClick() {
         for(BusRoute r : busRoutes){
             r.getNode().setOpacity(0.0);
         }

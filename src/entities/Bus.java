@@ -23,11 +23,11 @@ public class Bus extends Coordinate {
 
 
     private final RouteSchedule currentRouteSchedule;
-    private double speedPixelsPerSecond = 2;
+    public static double speedPixelsPerSecond = 2;
     private final int busCircleSize = 7;
     private double travelledDistance = 0;
     private Node node;
-    public static int waitAtFirstStopMinutes = 2;
+    public static int minutesToWaitAtStopAtLeast = 2;
 
 
     private OnBusClickListener listener;
