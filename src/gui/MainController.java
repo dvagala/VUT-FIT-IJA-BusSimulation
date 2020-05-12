@@ -6,8 +6,12 @@ import entities.*;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
@@ -15,6 +19,7 @@ import misc.SimulationSettings;
 
 import java.net.URL;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static java.time.temporal.ChronoUnit.MINUTES;
@@ -23,6 +28,24 @@ public class MainController  implements Initializable{
 
     @FXML
     private Text clockText;
+
+    @FXML
+    private TextField setTimeTextField;
+
+    @FXML
+    private TextField setSpeedTextField;
+
+    @FXML
+    private Text setTimeWrongFormatText;
+
+    @FXML
+    private Text setSpeedWrongFormatText;
+
+    @FXML
+    private Text routeDeparturesNumberText;
+
+    @FXML
+    public GridPane routeDeparturesGridPane;
 
     @FXML
     public Pane mapPane;
@@ -51,7 +74,7 @@ public class MainController  implements Initializable{
             @Override
             public void run() {
 //                System.out.println("neu frame");
-                clockText.setText(currentTime.toString());
+                clockText.setText(currentTime.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
                 handleBusesVisibilityOnMap();
 
                 for(Bus visibleBus : visibleBuses){
@@ -75,11 +98,16 @@ public class MainController  implements Initializable{
                         bus.setOnBusClickListener(new Bus.OnBusClickListener() {
                             @Override
                             public void busWasClicked() {
-                                for(Bus b : visibleBuses){
-                                    if(b.getBusRoute() != bus.getBusRoute()){
-                                        b.getBusRoute().getNode().setOpacity(0.0);
-                                    }
+                                for(BusRoute r : busRoutes){
+                                    r.getNode().setOpacity(0.0);
                                 }
+
+                                Pane nodeLayout = (Pane) busRoute.getNode();
+                                nodeLayout.setOpacity(0.5);
+
+                                routeDeparturesGridPane.getChildren().clear();
+                                fillRouteDeparturesGridPane(routeDeparturesGridPane, bus);
+                                routeDeparturesNumberText.setText("Route number " + bus.getBusRoute().getRouteNumber());
                             }
                         });
                         visibleBuses.add(bus);
@@ -94,6 +122,16 @@ public class MainController  implements Initializable{
                 }
             }
         }
+    }
+
+    private void fillRouteDeparturesGridPane(GridPane gridPane, Bus selectedBus){
+        Text text = new Text("hee");
+        for (int i = 0; i < selectedBus.getCurrentRouteSchedule().getEntries().size(); i++) {
+            RouteScheduleEntry entry = selectedBus.getCurrentRouteSchedule().getEntries().get(i);
+            gridPane.add(new Text(entry.getBusStop().getName()), 0, i);
+            gridPane.add(new Text(String.valueOf(entry.getDepartureTime())), 1, i);
+        }
+
     }
 
     private void setUpData(){
@@ -213,6 +251,57 @@ public class MainController  implements Initializable{
 
     }
 
+    public void onCloseDeparturesBtnClick(MouseEvent mouseEvent) {
+        for(BusRoute r : busRoutes){
+            r.getNode().setOpacity(0.0);
+        }
+
+        routeDeparturesNumberText.setText("Click on bus to see departures");
+        routeDeparturesGridPane.getChildren().clear();
+    }
+
+    public void onSetTimeBtnClick() {
+        if(setTimeTextField.getText().isEmpty()){
+            return;
+        }
+
+        boolean timeWasSetCorrectly = true;
+        try{
+            currentTime = LocalTime.parse(setTimeTextField.getText(), DateTimeFormatter.ofPattern("HH:mm:ss"));
+        }catch (Exception e){
+            try{
+                currentTime = LocalTime.parse(setTimeTextField.getText(), DateTimeFormatter.ofPattern("HH:mm"));
+            }catch (Exception e2){
+                timeWasSetCorrectly = false;
+                setTimeWrongFormatText.setVisible(true);
+            }
+        }finally {
+            setTimeTextField.clear();
+        }
+
+        if(timeWasSetCorrectly){
+            setTimeWrongFormatText.setVisible(false);
+        }
+    }
+
+    public void onSetSpeedBtnClick() {
+        if(setSpeedTextField.getText().isEmpty()){
+            return;
+        }
+
+        if(setSpeedTextField.getText().matches("\\d+x")){
+            try {
+                SimulationSettings.speedRatio = Double.parseDouble(setSpeedTextField.getText().substring(0, setSpeedTextField.getText().length()-1));
+                setSpeedWrongFormatText.setVisible(false);
+            }catch (Exception e){
+                setSpeedWrongFormatText.setVisible(true);
+            }
+        }else{
+            setSpeedWrongFormatText.setVisible(true);
+        }
+
+        setSpeedTextField.clear();
+    }
 }
 
 

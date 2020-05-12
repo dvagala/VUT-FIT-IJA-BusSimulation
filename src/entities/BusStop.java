@@ -9,6 +9,10 @@ import javafx.scene.text.Text;
 
 public class BusStop extends Coordinate {
 
+    public String getName() {
+        return name;
+    }
+
     private final String name;
 
     public BusStop(Coordinate coordinate, String name) {

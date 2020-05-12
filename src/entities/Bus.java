@@ -20,6 +20,8 @@ public class Bus extends Coordinate {
 
 
     private final BusRoute busRoute;
+
+
     private final RouteSchedule currentRouteSchedule;
     private double speedPixelsPerSecond = 2;
     private final int busCircleSize = 7;
@@ -37,6 +39,10 @@ public class Bus extends Coordinate {
         this.currentRouteSchedule = routeSchedule;
     }
 
+    public RouteSchedule getCurrentRouteSchedule() {
+        return currentRouteSchedule;
+    }
+
     private Node createNode(){
         Shape circle = new Circle(this.getX(), this.getY(), busCircleSize, busRoute.getColor());
         VBox vBox = new VBox();
@@ -49,12 +55,6 @@ public class Bus extends Coordinate {
 
         vBox.setOnMouseClicked(event -> {
             event.consume();
-            Pane nodeLayout = (Pane) busRoute.getNode();
-            if(nodeLayout.getOpacity() > 0){
-                nodeLayout.setOpacity(0.0);
-            }else{
-                nodeLayout.setOpacity(0.5);
-            }
             listener.busWasClicked();
         });
 
