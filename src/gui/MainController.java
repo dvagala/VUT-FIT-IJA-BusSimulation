@@ -19,7 +19,7 @@ import java.util.*;
 
 import static java.time.temporal.ChronoUnit.MINUTES;
 
-public class MainController  implements Initializable {
+public class MainController  implements Initializable{
 
     @FXML
     private Text clockText;
@@ -67,14 +67,24 @@ public class MainController  implements Initializable {
     private void handleBusesVisibilityOnMap(){
         for(BusRoute busRoute : busRoutes){
             for(RouteSchedule routeSchedule : busRoute.getRouteSchedules()){
-                if(currentTime.until(routeSchedule.getFirstStopDeparture(), MINUTES) < Bus.waitAtFirstStopMinutes && currentTime.compareTo(routeSchedule.getLastStopDeparture()) < 0){
-                    if(Bus.getVisibleBusByRoute(visibleBuses, busRoute) == null){
+                if(currentTime.until(routeSchedule.getFirstStopDepartureTime(), MINUTES) < Bus.waitAtFirstStopMinutes && currentTime.compareTo(routeSchedule.getLastStopDepartureTime()) < 0){
+                    if(Bus.getVisibleBusByRouteAndStartTime(visibleBuses, busRoute, routeSchedule.getFirstStopDepartureTime()) == null){
                         Bus bus = new Bus(busRoute);
+                        bus.setOnBusClickListener(new Bus.OnBusClickListener() {
+                            @Override
+                            public void busWasClicked() {
+                                for(Bus b : visibleBuses){
+                                    if(b != bus){
+                                        b.getBusRoute().getNode().setOpacity(0.0);
+                                    }
+                                }
+                            }
+                        });
                         visibleBuses.add(bus);
                         Platform.runLater(() -> mapPane.getChildren().add(bus.getNode()));
                     }
-                }else if(currentTime.compareTo(routeSchedule.getLastStopDeparture()) > 0){
-                    Bus bus = Bus.getVisibleBusByRoute(visibleBuses, busRoute);
+                }else if(currentTime.compareTo(routeSchedule.getLastStopDepartureTime()) > 0){
+                    Bus bus = Bus.getVisibleBusByRouteAndStartTime(visibleBuses, busRoute, routeSchedule.getFirstStopDepartureTime());
                     if(bus != null){
                         visibleBuses.remove(bus);
                         Platform.runLater(() -> mapPane.getChildren().remove(bus.getNode()));
@@ -168,6 +178,11 @@ public class MainController  implements Initializable {
                 LocalTime.of(10, 40),
                 LocalTime.of(10, 45),
                 LocalTime.of(10, 50)
+        )), new RouteSchedule(Arrays.asList(
+                LocalTime.of(10, 37),
+                LocalTime.of(10, 42),
+                LocalTime.of(10, 47),
+                LocalTime.of(10, 52)
         ))));
 
         busRoutes.add(busRoute2);
@@ -182,18 +197,16 @@ public class MainController  implements Initializable {
             mapPane.getChildren().addAll(s.getNodes());
         }
 
+
+        for(BusRoute route : busRoutes){
+            mapPane.getChildren().addAll(route.getNode());
+        }
+
         for(BusStop s : busStops){
             mapPane.getChildren().addAll(s.getNode());
         }
 
-        for(BusRoute route : busRoutes){
-            mapPane.getChildren().addAll(route.getNodes());
-        }
-
-
     }
-
-
 
 }
 

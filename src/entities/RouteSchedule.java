@@ -18,11 +18,11 @@ public class RouteSchedule {
       return departures;
    }
 
-   public LocalTime getFirstStopDeparture(){
+   public LocalTime getFirstStopDepartureTime(){
       return departures.get(0);
    }
 
-   public LocalTime getLastStopDeparture(){
+   public LocalTime getLastStopDepartureTime(){
       return departures.get(departures.size() - 1);
    }
 

@@ -1,10 +1,15 @@
 package entities;
 
 
+import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Line;
+import misc.ColorHelper;
+import sun.nio.fs.GnomeFileTypeDetector;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,16 +17,17 @@ import java.util.List;
 public class BusRoute {
 
     private final List<IRoutePoint> routePoints;
-    private List<BusStop> stops = new ArrayList<>();
+    private List<BusStop> stackPane = new ArrayList<>();
     private List<RouteSchedule> routeSchedules = new ArrayList<>();
     private Color color = Color.rgb(255, 0, 0);
     private final int routeNumber;
+    private Node node = null;
 
     public List<BusStop> getStops() {
-        return stops;
+        return stackPane;
     }
 
-    public Paint getColor() {
+    public Color getColor() {
         return color;
     }
 
@@ -35,7 +41,7 @@ public class BusRoute {
 
         for(IRoutePoint routePoint : routePoints){
             if(routePoint instanceof BusStop){
-                stops.add((BusStop) routePoint);
+                stackPane.add((BusStop) routePoint);
             }
         }
     }
@@ -56,21 +62,32 @@ public class BusRoute {
         this.color = color;
     }
 
-    public List<Node> getNodes(){
-        List<Node> nodes = new ArrayList<>();
+    public Node createNode(){
+
+        Pane pane = new Pane();
+
+        pane.setLayoutX(0);
+        pane.setLayoutY(0);
 
         for (int i = 0; i < routePoints.size()-1; i++) {
             IRoutePoint first = routePoints.get(i);
             IRoutePoint second = routePoints.get(i+1);
 
             Line line = new Line(first.getX(), first.getY(), second.getX(), second.getY());
-            Color opaqueColor = new Color(color.getRed(), color.getGreen(), color.getBlue(), 0.0);
-            line.setStroke(opaqueColor);
+            line.setStroke(ColorHelper.getLighterColor(color, 0.3));
             line.setStrokeWidth(7);
-            nodes.add(line);
+            pane.getChildren().add(line);
         }
+        pane.setOpacity(0.0);
 
-        return nodes;
+        return pane;
+    }
+
+    public Node getNode(){
+        if(node == null){
+            node = createNode();
+        }
+        return node;
     }
 
     public Coordinate getCoordinateByDistance(double distance){
