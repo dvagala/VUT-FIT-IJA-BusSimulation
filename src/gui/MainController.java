@@ -200,13 +200,14 @@ public class MainController  implements Initializable{
             busRoutes.add(busRoute);
         }
 
-        for(Street s : streets){
-            mapPane.getChildren().addAll(s.getNodes());
-        }
 
 
         for(BusRoute route : busRoutes){
             mapPane.getChildren().addAll(route.getNode());
+        }
+
+        for(Street s : streets){
+            mapPane.getChildren().addAll(s.getNode());
         }
 
         for(BusStop s : busStops){

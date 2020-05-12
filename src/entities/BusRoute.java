@@ -1,7 +1,9 @@
 package entities;
 
 
+import javafx.event.EventHandler;
 import javafx.scene.Node;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
@@ -84,6 +86,13 @@ public class BusRoute {
             pane.getChildren().add(line);
         }
         pane.setOpacity(0.0);
+
+        pane.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+//                System.out.println("route clicked");
+            }
+        });
 
         return pane;
     }

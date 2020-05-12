@@ -2,8 +2,11 @@ package entities;
 
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Line;
 import javafx.scene.shape.Polygon;
 import javafx.scene.text.Text;
 
@@ -14,6 +17,7 @@ public class BusStop extends Coordinate {
     }
 
     private final String name;
+    private Node node = null;
 
     public BusStop(Coordinate coordinate, String name) {
         this.setX(coordinate.getX());
@@ -21,7 +25,7 @@ public class BusStop extends Coordinate {
         this.name = name;
     }
 
-    public Node getNode(){
+    public Node createNode(){
         int size = 6;
         Polygon polygon = new Polygon(this.getX()-size, this.getY() + size, this.getX()+size, this.getY() + size, this.getX(), this.getY() - size );
         polygon.setFill(Color.BLUE);
@@ -34,5 +38,13 @@ public class BusStop extends Coordinate {
         vBox.setAlignment(Pos.TOP_LEFT);
 
         return vBox;
+    }
+
+    public Node getNode(){
+        if(node == null){
+            node = createNode();
+        }
+
+        return node;
     }
 }
