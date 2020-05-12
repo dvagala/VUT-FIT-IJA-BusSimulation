@@ -7,10 +7,12 @@ import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Shape;
 import javafx.scene.text.Text;
-import misc.SimulationSettings;
 
 import java.time.LocalTime;
 import java.util.List;
+
+import static entities.BusRoute.getDistanceBetweenRoutePoints;
+import static java.time.temporal.ChronoUnit.SECONDS;
 
 
 public class Bus extends Coordinate {
@@ -18,6 +20,7 @@ public class Bus extends Coordinate {
 
 
     private final BusRoute busRoute;
+    private final RouteSchedule currentRouteSchedule;
     private double speedPixelsPerSecond = 2;
     private final int busCircleSize = 7;
     private double travelledDistance = 0;
@@ -27,10 +30,11 @@ public class Bus extends Coordinate {
 
     private OnBusClickListener listener;
 
-    public Bus(BusRoute busRoute) {
+    public Bus(BusRoute busRoute, RouteSchedule routeSchedule) {
         this.busRoute = busRoute;
         this.setX(busRoute.getStops().get(0).getX());
         this.setY(busRoute.getStops().get(0).getY());
+        this.currentRouteSchedule = routeSchedule;
     }
 
     private Node createNode(){
@@ -72,14 +76,14 @@ public class Bus extends Coordinate {
     public void updateNodePosition(LocalTime currentTime){
         if(node != null){
 
-            // Bus waits on first stop or last stop
-            BusStop nextStop = getNextStop(currentTime);
-            if(nextStop == null){
+            if(busIsWaitingOnFirstStop(currentTime)){
+                setNodePosition(busRoute.getStops().get(0));
                 return;
             }
 
-            travelledDistance += speedPixelsPerSecond* SimulationSettings.updateIntervalMs*SimulationSettings.speedRatio/1000;
+            BusStop nextStop = getNextStop(currentTime);
 
+            travelledDistance = getTravelledDistanceByTime(currentTime, nextStop);
             double distanceFromStartToNextStop = busRoute.getDistanceFromStartToRoutePoint(nextStop);
 
             // If bus would goes beyond bus stop, this will move back to the bus stop and wait there till the departure time
@@ -87,9 +91,76 @@ public class Bus extends Coordinate {
                 travelledDistance = distanceFromStartToNextStop;
             }
 
-            setNodePosition(busRoute.getCoordinateByDistance(travelledDistance));
+            setNodePosition(getCoordinateByTravelledDistance(travelledDistance));
         }
     }
+
+    public boolean busIsWaitingOnFirstStop(LocalTime currentTime){
+        return  currentTime.compareTo(currentRouteSchedule.getFirstStopDepartureTime()) < 0;
+    }
+
+    private double getTravelledDistanceByTime(LocalTime currentTime, BusStop nextStop) {
+        BusStop lastStop = null;
+        for(BusStop s : busRoute.getStops()){
+            if(s == nextStop){
+                break;
+            }
+            lastStop = s;
+        }
+
+        double distanceToLastStop = 0;
+
+        IRoutePoint a = null;
+        IRoutePoint b = null;
+        for (int i = 0; i < busRoute.getRoutePoints().size() - 1; i++) {
+            a = busRoute.getRoutePoints().get(i);
+            b = busRoute.getRoutePoints().get(i+1);
+
+            if(a == lastStop){
+                break;
+            }
+            distanceToLastStop += getDistanceBetweenRoutePoints(a,b);
+        }
+
+        LocalTime departureTimeFromLastStop = null;
+
+        for (RouteScheduleEntry routeScheduleEntry : currentRouteSchedule.getEntries()){
+            if(routeScheduleEntry.getBusStop() == lastStop){
+                departureTimeFromLastStop = routeScheduleEntry.getDepartureTime();
+            }
+        }
+
+        if(departureTimeFromLastStop == null){
+            return 0;
+        }
+
+        return distanceToLastStop + departureTimeFromLastStop.until(currentTime, SECONDS)*speedPixelsPerSecond;
+    }
+
+    public Coordinate getCoordinateByTravelledDistance(double distance){
+        double length = 0;
+
+        IRoutePoint a = null;
+        IRoutePoint b = null;
+        for (int i = 0; i < busRoute.getRoutePoints().size() - 1; i++) {
+            a = busRoute.getRoutePoints().get(i);
+            b = busRoute.getRoutePoints().get(i+1);
+
+            if(length + getDistanceBetweenRoutePoints(a, b) >= distance){
+                break;
+            }
+            length += getDistanceBetweenRoutePoints(a,b);
+        }
+
+        if(a == null || b == null){
+            return null;
+        }
+
+        double driven = (distance - length) / getDistanceBetweenRoutePoints(a,b);
+        return new Coordinate((int) (a.getX() + (b.getX() - a.getX()) * driven), (int) (a.getY() + (b.getY() - a.getY())*driven));
+    }
+
+
 
     private void setNodePosition(Coordinate position){
 //        System.out.println("update bus pos: " + position.getX() + ", " + position.getY());
@@ -98,27 +169,11 @@ public class Bus extends Coordinate {
     }
 
     private BusStop getNextStop(LocalTime localTime) {
-        RouteSchedule currentRouteSchedule = this.getCurrentRouteSchedule(localTime);
-
-        if(currentRouteSchedule == null){
-            return null;
-        }
-
-        for (int i = 0; i < currentRouteSchedule.getDepartures().size() - 1; i++) {
-            if (localTime.compareTo(currentRouteSchedule.getDepartures().get(i)) >= 0 && localTime.compareTo(currentRouteSchedule.getDepartures().get(i + 1)) < 0) {
+        for (int i = 0; i < currentRouteSchedule.getEntries().size() - 1; i++) {
+            if (localTime.compareTo(currentRouteSchedule.getEntries().get(i).getDepartureTime()) >= 0 && localTime.compareTo(currentRouteSchedule.getEntries().get(i + 1).getDepartureTime()) < 0) {
                 return busRoute.getStops().get(i + 1);
             }
         }
-        return null;
-    }
-
-    public RouteSchedule getCurrentRouteSchedule(LocalTime localTime){
-        for (RouteSchedule routeSchedule : this.busRoute.getRouteSchedules()){
-            if(localTime.compareTo(routeSchedule.getFirstStopDepartureTime()) > 0 && localTime.compareTo(routeSchedule.getLastStopDepartureTime()) < 0){
-                return routeSchedule;
-            }
-        }
-
         return null;
     }
 

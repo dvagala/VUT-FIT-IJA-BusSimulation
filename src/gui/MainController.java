@@ -69,7 +69,7 @@ public class MainController  implements Initializable{
             for(RouteSchedule routeSchedule : busRoute.getRouteSchedules()){
                 if(currentTime.until(routeSchedule.getFirstStopDepartureTime(), MINUTES) < Bus.waitAtFirstStopMinutes && currentTime.compareTo(routeSchedule.getLastStopDepartureTime()) < 0){
                     if(Bus.getVisibleBusByRouteAndStartTime(visibleBuses, busRoute, routeSchedule.getFirstStopDepartureTime()) == null){
-                        Bus bus = new Bus(busRoute);
+                        Bus bus = new Bus(busRoute, routeSchedule);
                         bus.setOnBusClickListener(new Bus.OnBusClickListener() {
                             @Override
                             public void busWasClicked() {
@@ -140,9 +140,9 @@ public class MainController  implements Initializable{
         busRoute.setColor(Color.rgb(255, 0, 0));
 
         busRoute.setRouteSchedules(Arrays.asList(new RouteSchedule(Arrays.asList(
-                LocalTime.of(10, 30),
-                LocalTime.of(10, 35),
-                LocalTime.of(10, 45)
+                new RouteScheduleEntry(busStop, LocalTime.of(10, 30)),
+                new RouteScheduleEntry(busStop2, LocalTime.of(10, 35)),
+                new RouteScheduleEntry(busStop3, LocalTime.of(10, 45))
         ))));
 
         busRoutes.add(busRoute);
@@ -174,15 +174,10 @@ public class MainController  implements Initializable{
         busRoute2.setColor(Color.rgb(0, 0, 255));
 
         busRoute2.setRouteSchedules(Arrays.asList(new RouteSchedule(Arrays.asList(
-                LocalTime.of(10, 35),
-                LocalTime.of(10, 40),
-                LocalTime.of(10, 45),
-                LocalTime.of(10, 50)
-        )), new RouteSchedule(Arrays.asList(
-                LocalTime.of(10, 37),
-                LocalTime.of(10, 42),
-                LocalTime.of(10, 47),
-                LocalTime.of(10, 52)
+                new RouteScheduleEntry(busStop4, LocalTime.of(10, 33)),
+                new RouteScheduleEntry(busStop2, LocalTime.of(10, 40)),
+                new RouteScheduleEntry(busStop5, LocalTime.of(10, 45)),
+                new RouteScheduleEntry(busStop6, LocalTime.of(10, 50))
         ))));
 
         busRoutes.add(busRoute2);

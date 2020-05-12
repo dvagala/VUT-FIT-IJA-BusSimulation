@@ -16,6 +16,8 @@ import java.util.List;
 
 public class BusRoute {
 
+
+
     private final List<IRoutePoint> routePoints;
     private List<BusStop> stackPane = new ArrayList<>();
     private List<RouteSchedule> routeSchedules = new ArrayList<>();
@@ -25,6 +27,10 @@ public class BusRoute {
 
     public List<BusStop> getStops() {
         return stackPane;
+    }
+
+    public List<IRoutePoint> getRoutePoints() {
+        return routePoints;
     }
 
     public Color getColor() {
@@ -88,29 +94,6 @@ public class BusRoute {
             node = createNode();
         }
         return node;
-    }
-
-    public Coordinate getCoordinateByDistance(double distance){
-        double length = 0;
-
-        IRoutePoint a = null;
-        IRoutePoint b = null;
-        for (int i = 0; i < routePoints.size() - 1; i++) {
-            a = routePoints.get(i);
-            b = routePoints.get(i+1);
-
-            if(length + getDistanceBetweenRoutePoints(a, b) >= distance){
-                break;
-            }
-            length += getDistanceBetweenRoutePoints(a,b);
-        }
-
-        if(a == null || b == null){
-            return null;
-        }
-
-        double driven = (distance - length) / getDistanceBetweenRoutePoints(a,b);
-        return new Coordinate((int) (a.getX() + (b.getX() - a.getX()) * driven), (int) (a.getY() + (b.getY() - a.getY())*driven));
     }
 
     public static double getDistanceBetweenRoutePoints(IRoutePoint firstRoutePoint, IRoutePoint secondRoutePoint){

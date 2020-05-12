@@ -5,28 +5,26 @@ import java.util.List;
 
 public class RouteSchedule {
 
-   private List<LocalTime> departures;
+//   private List<LocalTime> departures;
+   private List<RouteScheduleEntry> entries;
 
    public RouteSchedule() {
    }
 
-   public RouteSchedule(List<LocalTime> departures) {
-      this.departures = departures;
+   public RouteSchedule(List<RouteScheduleEntry> entries) {
+      this.entries = entries;
    }
 
-   public List<LocalTime> getDepartures() {
-      return departures;
+   public List<RouteScheduleEntry> getEntries() {
+      return entries;
    }
 
    public LocalTime getFirstStopDepartureTime(){
-      return departures.get(0);
+      return entries.get(0).getDepartureTime();
    }
 
    public LocalTime getLastStopDepartureTime(){
-      return departures.get(departures.size() - 1);
+      return entries.get(entries.size() - 1).getDepartureTime();
    }
 
-   public void setDepartures(List<LocalTime> departures) {
-      this.departures = departures;
-   }
 }
