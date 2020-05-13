@@ -158,7 +158,8 @@ public class MainController  implements Initializable{
         List<BusStop> busStops = new ArrayList<>();
 
         //Load Streets
-        for (Object var : jStreets.keySet()){
+        SortedSet<String> keys = new TreeSet<String>(jStreets.keySet());
+        for (String var : keys){
             JSONObject s = (JSONObject) jStreets.get(var); //street
             ArrayList<JSONArray> coors = (ArrayList<JSONArray>) s.get("coors");
             List<Coordinate> coordinates = new ArrayList<>();
@@ -173,7 +174,8 @@ public class MainController  implements Initializable{
         }
 
         //Load BusStops
-        for (Object var: jBusStops.keySet()){
+        keys = new TreeSet<String>(jBusStops.keySet());
+        for (String var: keys){
             JSONObject jBusStop = (JSONObject) jBusStops.get(var);
             JSONArray jC = (JSONArray) jBusStop.get("c");
             BusStop busStop = new BusStop(new Coordinate(into(jC.get(0)), into(jC.get(1))), (String) jBusStop.get("name"));
@@ -213,6 +215,7 @@ public class MainController  implements Initializable{
             busRoutes.add(busRoute);
         }
 
+        System.out.println(streets.size());
 
         for(BusRoute route : busRoutes){
             mapPane.getChildren().addAll(route.getNode());
