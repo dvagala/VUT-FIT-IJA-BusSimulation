@@ -5,10 +5,14 @@ import java.time.LocalTime;
 public class RouteScheduleEntry {
     private BusStop busStop;
     private LocalTime departureTime;
+    private LocalTime nonDelayedDepartureTime;
+
+    private boolean isDelayed = false;
 
     public RouteScheduleEntry(BusStop busStop, LocalTime departureTime) {
         this.busStop = busStop;
         this.departureTime = departureTime;
+        this.nonDelayedDepartureTime = departureTime;
     }
 
     public LocalTime getDepartureTime() {
@@ -27,4 +31,15 @@ public class RouteScheduleEntry {
         this.busStop = busStop;
     }
 
+    public boolean isDelayed() {
+        return isDelayed;
+    }
+
+    public void setDelayed(boolean delayed) {
+        isDelayed = delayed;
+    }
+
+    public LocalTime getNonDelayedDepartureTime() {
+        return nonDelayedDepartureTime;
+    }
 }

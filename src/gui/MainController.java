@@ -78,6 +78,7 @@ public class MainController  implements Initializable{
             @Override
             public void run() {
 //                System.out.println("neu frame");
+//                System.out.println("neu frame, curr time: " + currentTime);
                 clockText.setText(currentTime.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
                 handleBusesVisibilityOnMap();
 
@@ -95,43 +96,60 @@ public class MainController  implements Initializable{
         for(BusRoute busRoute : busRoutes){
             for(RouteSchedule routeSchedule : busRoute.getRouteSchedules()){
                 if(currentTime.until(routeSchedule.getFirstStopDepartureTime(), MINUTES) < Bus.minutesToWaitAtStopAtLeast && currentTime.compareTo(routeSchedule.getLastStopDepartureTime()) < 0){
-                    if(Bus.getVisibleBusByRouteAndSchedule(visibleBuses, busRoute, routeSchedule) == null){
+//                    if(Bus.getVisibleBusByRouteAndSchedule(visibleBuses, busRoute, routeSchedule) == null){
+                    if(routeSchedule.getBus() == null){
                         Bus bus = new Bus(busRoute, routeSchedule);
                         bus.setOnBusClickListener(new Bus.OnBusClickListener() {
                             @Override
                             public void busWasClicked() {
-                                for(BusRoute r : busRoutes){
-                                    r.getNode().setOpacity(0.0);
-                                }
+                                Platform.runLater(() -> {
 
-                                Pane nodeLayout = (Pane) busRoute.getNode();
-                                nodeLayout.setOpacity(0.5);
+                                    for(BusRoute r : busRoutes){
+                                        r.getNode().setOpacity(0.0);
+                                    }
+                                    Pane nodeLayout = (Pane) busRoute.getNode();
+                                    nodeLayout.setOpacity(0.5);
 
-                                routeDeparturesGridPane.getChildren().clear();
-                                fillRouteDeparturesGridPane(routeDeparturesGridPane, bus);
-                                routeDeparturesNumberText.setText("Route number " + bus.getBusRoute().getRouteNumber());
+                                    routeDeparturesGridPane.getChildren().clear();
+                                    fillRouteDeparturesGridPane(bus);
+                                    routeDeparturesNumberText.setText("Route number " + bus.getBusRoute().getRouteNumber());
+                                });
                             }
                         });
                         visibleBuses.add(bus);
+                        routeSchedule.setBus(bus);
                         Platform.runLater(() -> mapPane.getChildren().add(bus.getNode()));
                     }
                 }else if(currentTime.compareTo(routeSchedule.getLastStopDepartureTime()) > 0){
                     Bus bus = Bus.getVisibleBusByRouteAndSchedule(visibleBuses, busRoute, routeSchedule);
                     if(bus != null){
                         visibleBuses.remove(bus);
-                        Platform.runLater(() -> mapPane.getChildren().remove(bus.getNode()));
+                        routeSchedule.setBus(null);
+                        Platform.runLater(() ->{
+                            mapPane.getChildren().remove(bus.getNode());
+                            if(bus == selectedBus){
+                                onCloseDeparturesBtnClick();
+                            }
+                        });
                     }
                 }
             }
         }
     }
 
-    private void fillRouteDeparturesGridPane(GridPane gridPane, Bus selectedBus){
-        Text text = new Text("hee");
+    private Bus selectedBus = null;
+
+    private void fillRouteDeparturesGridPane( Bus selectedBus){
+        routeDeparturesGridPane.getChildren().clear();
+        this.selectedBus = selectedBus;
         for (int i = 0; i < selectedBus.getCurrentRouteSchedule().getEntries().size(); i++) {
             RouteScheduleEntry entry = selectedBus.getCurrentRouteSchedule().getEntries().get(i);
-            gridPane.add(new Text(entry.getBusStop().getName()), 0, i);
-            gridPane.add(new Text(String.valueOf(entry.getDepartureTime())), 1, i);
+            routeDeparturesGridPane.add(new Text(entry.getBusStop().getName()), 0, i);
+            Text text = new Text(String.valueOf(entry.getDepartureTime()));
+            if(entry.isDelayed()){
+                text.setFill(Color.RED);
+            }
+            routeDeparturesGridPane.add(text, 1, i);
         }
 
     }
@@ -144,6 +162,7 @@ public class MainController  implements Initializable{
         JSONParser parser = new JSONParser();
         try {
             Object obj = parser.parse(new FileReader("data.json"));
+//            Object obj = parser.parse(new FileReader("data-simple.json"));
             jo = (JSONObject) obj;
         } catch (IOException e) {
             e.printStackTrace();
@@ -211,11 +230,10 @@ public class MainController  implements Initializable{
                 localTimes.add(LocalTime.of(into(s.get(0)),into(s.get(1))));
             }
             busRoute.setRouteSchedulesByFirstDepartureTimes(localTimes);
-            busRoute.calculatePassingStreets(streets);
             busRoutes.add(busRoute);
         }
 
-        System.out.println(streets.size());
+//        System.out.println(streets.size());
 
         for(BusRoute route : busRoutes){
             mapPane.getChildren().addAll(route.getNode());
@@ -223,6 +241,16 @@ public class MainController  implements Initializable{
 
         for(Street s : streets){
             mapPane.getChildren().addAll(s.getNode());
+
+            s.setOnTrafficChangeListener(trafficRate -> {
+                for(BusRoute busRoute : busRoutes){
+                    busRoute.recalculateDepartureTimes(currentTime);
+                    if(selectedBus != null){
+//                        System.out.println("fill de p times");
+                        fillRouteDeparturesGridPane(selectedBus);
+                    }
+                }
+            });
         }
 
         for(BusStop s : busStops){
@@ -232,55 +260,64 @@ public class MainController  implements Initializable{
     }
 
     public void onCloseDeparturesBtnClick() {
-        for(BusRoute r : busRoutes){
-            r.getNode().setOpacity(0.0);
-        }
 
-        routeDeparturesNumberText.setText("Click on bus to see departures");
-        routeDeparturesGridPane.getChildren().clear();
+        Platform.runLater(() -> {
+            for(BusRoute r : busRoutes){
+                r.getNode().setOpacity(0.0);
+            }
+
+            routeDeparturesNumberText.setText("Click on bus to see departures");
+            routeDeparturesGridPane.getChildren().clear();
+        });
+
+        selectedBus = null;
     }
 
     public void onSetTimeBtnClick() {
-        if(setTimeTextField.getText().isEmpty()){
-            return;
-        }
-
-        boolean timeWasSetCorrectly = true;
-        try{
-            currentTime = LocalTime.parse(setTimeTextField.getText(), DateTimeFormatter.ofPattern("HH:mm:ss"));
-        }catch (Exception e){
-            try{
-                currentTime = LocalTime.parse(setTimeTextField.getText(), DateTimeFormatter.ofPattern("HH:mm"));
-            }catch (Exception e2){
-                timeWasSetCorrectly = false;
-                setTimeWrongFormatText.setVisible(true);
+        Platform.runLater(() -> {
+            if(setTimeTextField.getText().isEmpty()){
+                return;
             }
-        }finally {
-            setTimeTextField.clear();
-        }
 
-        if(timeWasSetCorrectly){
-            setTimeWrongFormatText.setVisible(false);
-        }
+            boolean timeWasSetCorrectly = true;
+            try{
+                currentTime = LocalTime.parse(setTimeTextField.getText(), DateTimeFormatter.ofPattern("HH:mm:ss"));
+            }catch (Exception e){
+                try{
+                    currentTime = LocalTime.parse(setTimeTextField.getText(), DateTimeFormatter.ofPattern("HH:mm"));
+                }catch (Exception e2){
+                    timeWasSetCorrectly = false;
+                    setTimeWrongFormatText.setVisible(true);
+                }
+            }finally {
+                setTimeTextField.clear();
+            }
+
+            if(timeWasSetCorrectly){
+                setTimeWrongFormatText.setVisible(false);
+            }
+        });
     }
 
     public void onSetSpeedBtnClick() {
-        if(setSpeedTextField.getText().isEmpty()){
-            return;
-        }
+        Platform.runLater(() -> {
+            if(setSpeedTextField.getText().isEmpty()){
+                return;
+            }
 
-        if(setSpeedTextField.getText().matches("\\d+x")){
-            try {
-                SimulationSettings.speedRatio = Double.parseDouble(setSpeedTextField.getText().substring(0, setSpeedTextField.getText().length()-1));
-                setSpeedWrongFormatText.setVisible(false);
-            }catch (Exception e){
+            if(setSpeedTextField.getText().matches("\\d+x")){
+                try {
+                    SimulationSettings.speedRatio = Double.parseDouble(setSpeedTextField.getText().substring(0, setSpeedTextField.getText().length()-1));
+                    setSpeedWrongFormatText.setVisible(false);
+                }catch (Exception e){
+                    setSpeedWrongFormatText.setVisible(true);
+                }
+            }else{
                 setSpeedWrongFormatText.setVisible(true);
             }
-        }else{
-            setSpeedWrongFormatText.setVisible(true);
-        }
 
-        setSpeedTextField.clear();
+            setSpeedTextField.clear();
+        });
     }
 }
 

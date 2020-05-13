@@ -1,5 +1,6 @@
 package entities;
 
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
@@ -29,6 +30,7 @@ public class Street{
 
 
     private String name;
+    private Listener listener;
 
     public Street(List<Coordinate> coordinates, String name) {
         this.coordinates = new ArrayList<>(coordinates);
@@ -87,13 +89,16 @@ public class Street{
         for (int i = 0; i < menuItems.size(); i++) {
             int finalI = i;
             menuItems.get(i).setOnAction(event -> {
-                System.out.println("traf: " + (finalI +1));
-                if(finalI == 0){
-                    streetNameTextNode.setText(name);
-                }else{
-                    streetNameTextNode.setText(name + " traffic: " + (finalI+1) + "x");
-                }
+//                System.out.println("traf: " + (finalI +1));
+                Platform.runLater(() -> {
+                    if(finalI == 0){
+                        streetNameTextNode.setText(name);
+                    }else{
+                        streetNameTextNode.setText(name + " traffic: " + (finalI+1) + "x");
+                    }
+                });
                 trafficRate = finalI + 1;
+                listener.trafficHasChanged(trafficRate);
             });
 
         }
@@ -112,7 +117,7 @@ public class Street{
         ContextMenu contextMenu = setUpContextMenu();
         EventHandler<MouseEvent> contextMenuShowHandler = event -> {
             if (event.getButton() == MouseButton.SECONDARY) {
-                contextMenu.show(pane, event.getScreenX(), event.getScreenY());
+                Platform.runLater(() -> contextMenu.show(pane, event.getScreenX(), event.getScreenY()));
             }
 
             event.consume();
@@ -169,14 +174,6 @@ public class Street{
         return angle;
     }
 
-
-    public static Street getStreetByCoordinate(List<Street> streets, Coordinate coordinate) {
-        return null;
-
-
-
-    }
-
     public Node getNode(){
         if(node == null){
             node = createNode();
@@ -184,4 +181,14 @@ public class Street{
 
         return node;
     }
+
+    public void setOnTrafficChangeListener(Listener listener) {
+        this.listener = listener;
+    }
+
+    public interface Listener{
+        void trafficHasChanged(int trafficRate);
+    }
+
+
 }

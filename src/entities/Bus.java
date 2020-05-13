@@ -1,5 +1,6 @@
 package entities;
 
+import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.input.MouseButton;
@@ -7,6 +8,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Shape;
 import javafx.scene.text.Text;
+import misc.SimulationSettings;
 
 import java.time.LocalTime;
 import java.util.List;
@@ -16,8 +18,6 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 
 
 public class Bus extends Coordinate {
-
-
 
     private final BusRoute busRoute;
 
@@ -30,6 +30,7 @@ public class Bus extends Coordinate {
     private Node node;
     public static int minutesToWaitAtStopAtLeast = 2;
     private Text busTextNode;
+    private IRoutePoint lastVisitedRoutePoint = null;
 
 
     private OnBusClickListener listener;
@@ -48,6 +49,7 @@ public class Bus extends Coordinate {
 
 
     private Node createNode(){
+
         Shape circle = new Circle(this.getX(), this.getY(), busCircleSize, busRoute.getColor());
         VBox vBox = new VBox();
         vBox.getChildren().add(circle);
@@ -80,33 +82,77 @@ public class Bus extends Coordinate {
     }
 
     public void updateNodePosition(LocalTime currentTime){
-        if(node != null){
 
-            if(busIsWaitingOnFirstStop(currentTime)){
-                setNodePosition(busRoute.getStops().get(0));
-                return;
-            }
+        BusStop nextStop = getNextStop(currentTime);
 
-
-            BusStop nextStop = getNextStop(currentTime);
-
+        if(currentTime == SimulationSettings.startTime){
             travelledDistance = getTravelledDistanceByTime(currentTime, nextStop);
-            double distanceFromStartToNextStop = busRoute.getDistanceFromStartToRoutePoint(nextStop);
-
-            // If bus would goes beyond bus stop, this will move back to the bus stop and wait there till the departure time
-            if(travelledDistance > distanceFromStartToNextStop){
-                travelledDistance = distanceFromStartToNextStop;
-            }
-
-            Coordinate newBusPosition = getCoordinateByTravelledDistance(travelledDistance);
-            setNodePosition(newBusPosition);
-
-//            currentStreetTrafficRate = Street.getStreetByCoordinate(busRoute.getPassingStreets(), newBusPosition).getTrafficRate();
+            return;
         }
+
+//        System.out.println("curr time: " + currentTime + ", start Time: " + SimulationSettings.startTime);
+//        System.out.println("traveled dist: " + travelledDistance);
+
+        if(busIsWaitingOnFirstStop(currentTime)){
+//            System.out.println("busIsWaitingOnFirstStop");
+            setNodePosition(busRoute.getStops().get(0));
+            return;
+        }
+
+        if(nextStop == null){
+//            System.out.println("busIsWaitingOnLastStop");
+            setNodePosition(busRoute.getStops().get(busRoute.getStops().size()-1));
+            return;
+        }
+
+        currentStreetTrafficRate = getCurrentStreetTrafficRate(travelledDistance);
+
+        travelledDistance += (speedPixelsPerSecond*((double)(SimulationSettings.updateIntervalMs)/1000)*SimulationSettings.speedRatio)/currentStreetTrafficRate;
+
+        double distanceFromStartToNextStop = busRoute.getDistanceFromStartToRoutePoint(nextStop);
+//        System.out.println("next stop: " + nextStop.getX() + ", " + nextStop.getY());
+
+        // If bus would goes beyond bus stop, this will move back to the bus stop and wait there till the departure time
+        if(travelledDistance > distanceFromStartToNextStop){
+            travelledDistance = distanceFromStartToNextStop;
+        }
+
+        Coordinate newBusPosition = getCoordinateByTravelledDistance(travelledDistance);
+        setNodePosition(newBusPosition);
+    }
+
+    private int getCurrentStreetTrafficRate(double distance) {
+        double length = 0;
+
+        IRoutePoint a = null;
+        IRoutePoint b = null;
+        for (int i = 0; i < busRoute.getRoutePoints().size() - 1; i++) {
+            a = busRoute.getRoutePoints().get(i);
+            b = busRoute.getRoutePoints().get(i+1);
+
+            if(length + getDistanceBetweenRoutePoints(a, b) >= distance){
+                break;
+            }
+            length += getDistanceBetweenRoutePoints(a,b);
+        }
+
+        if(a == null || b == null){
+            return 1;
+        }
+
+        if(a.getStreetAfter() != null && busTextNode != null){
+            busTextNode.setText(busRoute.getRouteNumber() + ", " + a.getStreetAfter().getName());
+            return currentStreetTrafficRate = a.getStreetAfter().getTrafficRate();
+        }
+        return 1;
     }
 
     public boolean busIsWaitingOnFirstStop(LocalTime currentTime){
         return  currentTime.compareTo(currentRouteSchedule.getFirstStopDepartureTime()) < 0;
+    }
+
+    public boolean busIsWaitingOnLastStop(LocalTime currentTime){
+        return  currentTime.compareTo(currentRouteSchedule.getLastStopDepartureTime().plusMinutes(minutesToWaitAtStopAtLeast)) > 0;
     }
 
     private double getTravelledDistanceByTime(LocalTime currentTime, BusStop nextStop) {
@@ -144,7 +190,7 @@ public class Bus extends Coordinate {
             return 0;
         }
 
-        return distanceToLastStop + departureTimeFromLastStop.until(currentTime, SECONDS)*speedPixelsPerSecond/ currentStreetTrafficRate;
+        return distanceToLastStop + departureTimeFromLastStop.until(currentTime, SECONDS)*speedPixelsPerSecond;
     }
 
     public Coordinate getCoordinateByTravelledDistance(double distance){
@@ -166,9 +212,7 @@ public class Bus extends Coordinate {
             return null;
         }
 
-        if(a.getStreetAfter() != null){
-            busTextNode.setText(busRoute.getRouteNumber() + ", " + a.getStreetAfter().getName());
-        }
+        lastVisitedRoutePoint = a;
 
         double driven = (distance - length) / getDistanceBetweenRoutePoints(a,b);
         return new Coordinate((int) (a.getX() + (b.getX() - a.getX()) * driven), (int) (a.getY() + (b.getY() - a.getY())*driven));
@@ -178,8 +222,14 @@ public class Bus extends Coordinate {
 
     private void setNodePosition(Coordinate position){
 //        System.out.println("update bus pos: " + position.getX() + ", " + position.getY());
-        node.setLayoutX(position.getX() - busCircleSize);
-        node.setLayoutY(position.getY() - busCircleSize);
+        this.setX(position.getX());
+        this.setY(position.getY());
+        if(node != null){
+            Platform.runLater(() -> {
+                node.setLayoutX(position.getX() - busCircleSize);
+                node.setLayoutY(position.getY() - busCircleSize);
+            });
+        }
     }
 
     private BusStop getNextStop(LocalTime localTime) {
@@ -204,6 +254,10 @@ public class Bus extends Coordinate {
 
     public void setOnBusClickListener(OnBusClickListener listener) {
         this.listener = listener;
+    }
+
+    public IRoutePoint getLastVisitedRoutePoint() {
+        return lastVisitedRoutePoint;
     }
 
     public interface OnBusClickListener {

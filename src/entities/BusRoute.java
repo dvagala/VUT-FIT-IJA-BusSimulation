@@ -1,9 +1,7 @@
 package entities;
 
 
-import javafx.event.EventHandler;
 import javafx.scene.Node;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
@@ -12,14 +10,9 @@ import misc.ColorHelper;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class BusRoute {
-
-
-
-    private List<Street> passingStreets = new ArrayList<>();
 
     private final List<IRoutePoint> routePoints;
     private List<BusStop> busStops = new ArrayList<>();
@@ -37,10 +30,6 @@ public class BusRoute {
                 busStops.add((BusStop) routePoint);
             }
         }
-    }
-
-    public List<Street> getPassingStreets() {
-        return passingStreets;
     }
 
     public List<BusStop> getStops() {
@@ -93,13 +82,6 @@ public class BusRoute {
         }
         pane.setOpacity(0.0);
 
-        pane.setOnMouseClicked(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent event) {
-//                System.out.println("route clicked");
-            }
-        });
-
         return pane;
     }
 
@@ -135,77 +117,108 @@ public class BusRoute {
         return 0;
     }
 
-    public void setRouteSchedulesByFirstDepartureTimes(List<LocalTime> firstStopDepartureTimes){
+    private List<RouteScheduleEntry> getCalculatedEntriesByFirstDepartureTime(LocalTime firstDepartureTime){
+        List<RouteScheduleEntry> entries = new ArrayList<>();
+        entries.add(new RouteScheduleEntry(busStops.get(0), firstDepartureTime));
 
-        for (LocalTime firstDepartureTime : firstStopDepartureTimes){
+        LocalTime lastStopDepartureTime = firstDepartureTime;
+        double distanceBetweenStops = 0;
 
-            List<RouteScheduleEntry> entries = new ArrayList<>();
-            entries.add(new RouteScheduleEntry(busStops.get(0), firstDepartureTime));
+        boolean thisDepartureTimeIsDelayed = false;
 
-            LocalTime lastStopDepartureTime = firstDepartureTime;
-            double distanceBetweenStops = 0;
+        IRoutePoint a = null;
+        IRoutePoint b = null;
+        for (int i = 0; i < routePoints.size() - 1; i++) {
+            a = routePoints.get(i);
+            b = routePoints.get(i+1);
 
-            IRoutePoint a = null;
-            IRoutePoint b = null;
-            for (int i = 0; i < routePoints.size() - 1; i++) {
-                a = routePoints.get(i);
-                b = routePoints.get(i+1);
-
+            int currentSegmentTrafficRate = a.getStreetAfter().getTrafficRate();
+            if(currentSegmentTrafficRate > 1){
+                distanceBetweenStops += getDistanceBetweenRoutePoints(a,b)*currentSegmentTrafficRate;
+                thisDepartureTimeIsDelayed = true;
+            }else{
                 distanceBetweenStops += getDistanceBetweenRoutePoints(a,b);
-
-                if(b instanceof BusStop){
-                    int secondsBetweenStops = (int) (distanceBetweenStops/Bus.speedPixelsPerSecond);
-
-                    LocalTime calculatedDepartureTime = lastStopDepartureTime.plusSeconds(secondsBetweenStops + Bus.minutesToWaitAtStopAtLeast*60);
-                    LocalTime calculatedDepartureTimeRounded = calculatedDepartureTime.truncatedTo(ChronoUnit.MINUTES).plusMinutes(1);
-
-                    entries.add(new RouteScheduleEntry((BusStop) b, calculatedDepartureTimeRounded));
-                    lastStopDepartureTime = calculatedDepartureTime;
-                    distanceBetweenStops = 0;
-                }
             }
-            routeSchedules.add(new RouteSchedule(entries));
+
+            if(b instanceof BusStop){
+                int secondsBetweenStops = (int) (distanceBetweenStops/Bus.speedPixelsPerSecond);
+
+                LocalTime calculatedDepartureTime = lastStopDepartureTime.plusSeconds(secondsBetweenStops + Bus.minutesToWaitAtStopAtLeast*60);
+                LocalTime calculatedDepartureTimeRounded = calculatedDepartureTime.truncatedTo(ChronoUnit.MINUTES).plusMinutes(1);
+
+                RouteScheduleEntry entry = new RouteScheduleEntry((BusStop) b, calculatedDepartureTimeRounded);
+                entry.setDelayed(thisDepartureTimeIsDelayed);
+                entries.add(entry);
+                lastStopDepartureTime = calculatedDepartureTime;
+                distanceBetweenStops = 0;
+            }
+        }
+
+        return entries;
+    }
+
+    public void setRouteSchedulesByFirstDepartureTimes(List<LocalTime> firstStopDepartureTimes){
+        for (LocalTime firstDepartureTime : firstStopDepartureTimes){
+            routeSchedules.add(new RouteSchedule(getCalculatedEntriesByFirstDepartureTime(firstDepartureTime)));
         }
     }
 
-    public void calculatePassingStreets(List<Street> allStreets){
-        for(Street street : allStreets){
-//            System.out.println( "check street: " + street.getName());
-//            if(isRoutePassingStreet(street, routePoints)){
-//                if(!passingStreets.contains(street)){
-//                    passingStreets.add(street);
-//                    System.out.println("route: " + routeNumber + ", add street: " + street.getName());
-//                }
-//            }
-            passingStreets.add(street);
+    public void recalculateDepartureTimes(LocalTime currentTime){
+        for (RouteSchedule routeSchedule : routeSchedules){
+            if(routeSchedule.getBus() == null){
+                // Bus is not visible so we can calculate more easily
+                routeSchedule.setEntries(getCalculatedEntriesByFirstDepartureTime(routeSchedule.getFirstStopDepartureTime()));
+            }else{
+                // Bus is visible we should calculate with realtime
+                recalculateEntriesWhenBusIsVisible(routeSchedule, currentTime);
+            }
         }
     }
 
-    private boolean isRoutePassingStreet(Street street, List<IRoutePoint> routePoints) {
-        List<IRoutePoint> routePointsNotBusStops = new ArrayList<>();
-        for(IRoutePoint routePoint : routePoints){
-            if(!(routePoint instanceof BusStop)){
-                routePointsNotBusStops.add(routePoint);
-            }
+    private void recalculateEntriesWhenBusIsVisible(RouteSchedule routeSchedule, LocalTime currentTime) {
+
+        int lastVisitedRoutePointIndex = routePoints.lastIndexOf(routeSchedule.getBus().getLastVisitedRoutePoint());
+        // Prevent weird bug
+        if(lastVisitedRoutePointIndex < 0){
+            lastVisitedRoutePointIndex = 0;
         }
+//        System.out.println("lastVisitedRoutePointIndex: " + lastVisitedRoutePointIndex);
 
+        double secondsToNextStop = 0;
+        IRoutePoint a = null;
+        IRoutePoint b = null;
+        for (int i = lastVisitedRoutePointIndex; i < routePoints.size() - 1; i++) {
+//            System.out.println("i: " + i + ", routePoints size: " + routePoints.size());
+            a = routePoints.get(i);
+            b = routePoints.get(i+1);
 
-        for (int i = 0; i < routePointsNotBusStops.size()-1; i++) {
-            for (int j = 0; j < street.getCoordinates().size()-1; j++) {
-                if(routePointsNotBusStops.get(i) == street.getCoordinate(j)){
-                    if(routePointsNotBusStops.get(i+1) == street.getCoordinate(j+1)){
-                        return true;
-                    }
+            int currentSegmentTrafficRate = a.getStreetAfter().getTrafficRate();
+            if(lastVisitedRoutePointIndex == i){
+                a = routeSchedule.getBus();
+            }
+            secondsToNextStop += (getDistanceBetweenRoutePoints(a,b)*currentSegmentTrafficRate)/Bus.speedPixelsPerSecond;
 
-                    if(j-1 >= 0){
-                        if(routePointsNotBusStops.get(i+1) == street.getCoordinate(j-1)){
-                            return true;
-                        }
-                    }
+            if(b instanceof BusStop){
+//                scheduleEntryIndex = routeSchedule.getEntries().indexOf()
+                int scheduleEntryIndex = routeSchedule.getIndexOfEntryByBusStop((BusStop) b);
+//                System.out.println("scheduleEntryIndex: " + scheduleEntryIndex);
+
+                LocalTime calculatedDepartureTime = currentTime.plusSeconds((long) secondsToNextStop + Bus.minutesToWaitAtStopAtLeast*60);
+                LocalTime calculatedDepartureTimeRounded = calculatedDepartureTime.truncatedTo(ChronoUnit.MINUTES).plusMinutes(1);
+
+                routeSchedule.getEntries().get(scheduleEntryIndex).setDepartureTime(calculatedDepartureTimeRounded);
+
+//                System.out.println("dep time: " + routeSchedule.getEntries().get(scheduleEntryIndex).getDepartureTime());
+//                System.out.println("non del dep time: " + routeSchedule.getEntries().get(scheduleEntryIndex).getNonDelayedDepartureTime());
+
+                if(routeSchedule.getEntries().get(scheduleEntryIndex).getDepartureTime().compareTo(routeSchedule.getEntries().get(scheduleEntryIndex).getNonDelayedDepartureTime()) == 0){
+                    routeSchedule.getEntries().get(scheduleEntryIndex).setDelayed(false);
+                }else {
+                    routeSchedule.getEntries().get(scheduleEntryIndex).setDelayed(true);
                 }
+
             }
         }
-        return false;
     }
 
 }
