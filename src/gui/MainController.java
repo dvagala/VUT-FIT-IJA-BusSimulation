@@ -157,7 +157,7 @@ public class MainController  implements Initializable{
         List<Street> streets = new ArrayList<>();
         List<BusStop> busStops = new ArrayList<>();
 
-
+        //Load Streets
         for (Object var : jStreets.keySet()){
             JSONObject s = (JSONObject) jStreets.get(var); //street
             ArrayList<JSONArray> coors = (ArrayList<JSONArray>) s.get("coors");
@@ -166,11 +166,13 @@ public class MainController  implements Initializable{
                 Coordinate c = new Coordinate(into(jC.get(0)), into(jC.get(1))); //x,y value of coord
                 coordinates.add(c);
             }
-            Street street = new Street(coordinates, "main street");
+
+            Street street = new Street(coordinates, (String)s.get("name"));
             street.setColor(Color.valueOf((String) s.get("color")));
             streets.add(street);
         }
 
+        //Load BusStops
         for (Object var: jBusStops.keySet()){
             JSONObject jBusStop = (JSONObject) jBusStops.get(var);
             JSONArray jC = (JSONArray) jBusStop.get("c");
@@ -178,6 +180,7 @@ public class MainController  implements Initializable{
             busStops.add(busStop);
         }
 
+        //Load BusRoutes
         for (Object var: jBusRoutes.keySet()) {
             JSONObject jBusRoute = (JSONObject) jBusRoutes.get(var);
             List<IRoutePoint> data = new ArrayList <>();
