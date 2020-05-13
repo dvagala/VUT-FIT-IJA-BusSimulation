@@ -5,6 +5,8 @@ public class Coordinate implements IRoutePoint {
     private int x;
     private int y;
 
+    private Street streetAfter = null;
+
     public Coordinate() {
     }
 
@@ -24,5 +26,13 @@ public class Coordinate implements IRoutePoint {
     }
     public void setY(int y) {
         this.y = y;
+    }
+
+    public Street getStreetAfter() {
+        return streetAfter;
+    }
+
+    public void setStreetAfter(Street streetAfter) {
+        this.streetAfter = streetAfter;
     }
 }

@@ -3,7 +3,6 @@ package entities;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.input.MouseButton;
-import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Shape;
@@ -25,10 +24,12 @@ public class Bus extends Coordinate {
 
     private final RouteSchedule currentRouteSchedule;
     public static double speedPixelsPerSecond = 2;
+    public int currentStreetTrafficRate = 1;
     private final int busCircleSize = 7;
     private double travelledDistance = 0;
     private Node node;
     public static int minutesToWaitAtStopAtLeast = 2;
+    private Text busTextNode;
 
 
     private OnBusClickListener listener;
@@ -44,12 +45,14 @@ public class Bus extends Coordinate {
         return currentRouteSchedule;
     }
 
+
+
     private Node createNode(){
         Shape circle = new Circle(this.getX(), this.getY(), busCircleSize, busRoute.getColor());
         VBox vBox = new VBox();
         vBox.getChildren().add(circle);
-        Text text = new Text(this.getX() - busCircleSize*4, this.getY() + busCircleSize*4, String.valueOf(busRoute.getRouteNumber()));
-        vBox.getChildren().add(text);
+        busTextNode = new Text(this.getX() - busCircleSize*4, this.getY() + busCircleSize*4, String.valueOf(busRoute.getRouteNumber()));
+        vBox.getChildren().add(busTextNode);
         vBox.setLayoutX(this.getX() - busCircleSize);
         vBox.setLayoutY(this.getY() - busCircleSize);
         vBox.setAlignment(Pos.TOP_LEFT);
@@ -84,6 +87,7 @@ public class Bus extends Coordinate {
                 return;
             }
 
+
             BusStop nextStop = getNextStop(currentTime);
 
             travelledDistance = getTravelledDistanceByTime(currentTime, nextStop);
@@ -94,7 +98,10 @@ public class Bus extends Coordinate {
                 travelledDistance = distanceFromStartToNextStop;
             }
 
-            setNodePosition(getCoordinateByTravelledDistance(travelledDistance));
+            Coordinate newBusPosition = getCoordinateByTravelledDistance(travelledDistance);
+            setNodePosition(newBusPosition);
+
+//            currentStreetTrafficRate = Street.getStreetByCoordinate(busRoute.getPassingStreets(), newBusPosition).getTrafficRate();
         }
     }
 
@@ -137,7 +144,7 @@ public class Bus extends Coordinate {
             return 0;
         }
 
-        return distanceToLastStop + departureTimeFromLastStop.until(currentTime, SECONDS)*speedPixelsPerSecond;
+        return distanceToLastStop + departureTimeFromLastStop.until(currentTime, SECONDS)*speedPixelsPerSecond/ currentStreetTrafficRate;
     }
 
     public Coordinate getCoordinateByTravelledDistance(double distance){
@@ -157,6 +164,10 @@ public class Bus extends Coordinate {
 
         if(a == null || b == null){
             return null;
+        }
+
+        if(a.getStreetAfter() != null){
+            busTextNode.setText(busRoute.getRouteNumber() + ", " + a.getStreetAfter().getName());
         }
 
         double driven = (distance - length) / getDistanceBetweenRoutePoints(a,b);

@@ -1,5 +1,6 @@
 package entities;
 
+import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
@@ -19,14 +20,27 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Street{
+
     private final List<Coordinate> coordinates;
     private Color color = Color.BLACK;
+
+
+    private int trafficRate = 1;
+
 
     private String name;
 
     public Street(List<Coordinate> coordinates, String name) {
         this.coordinates = new ArrayList<>(coordinates);
         this.name = name;
+    }
+
+    public List<Coordinate> getCoordinates() {
+        return coordinates;
+    }
+
+    public int getTrafficRate() {
+        return trafficRate;
     }
 
     public String getName() {
@@ -51,8 +65,13 @@ public class Street{
     private Text streetNameTextNode = null;
 
     private ContextMenu setUpContextMenu(){
+
+
+
         final ContextMenu contextMenu = new ContextMenu();
-        contextMenu.getItems().addAll(Arrays.asList(
+
+
+        List<MenuItem> menuItems = Arrays.asList(
                 new MenuItem("Traffic 1x"),
                 new MenuItem("Traffic 2x"),
                 new MenuItem("Traffic 3x"),
@@ -63,7 +82,23 @@ public class Street{
                 new MenuItem("Traffic 8x"),
                 new MenuItem("Traffic 9x"),
                 new MenuItem("Traffic 10x")
-        ));
+        );
+
+        for (int i = 0; i < menuItems.size(); i++) {
+            int finalI = i;
+            menuItems.get(i).setOnAction(event -> {
+                System.out.println("traf: " + (finalI +1));
+                if(finalI == 0){
+                    streetNameTextNode.setText(name);
+                }else{
+                    streetNameTextNode.setText(name + " traffic: " + (finalI+1) + "x");
+                }
+                trafficRate = finalI + 1;
+            });
+
+        }
+
+        contextMenu.getItems().addAll(menuItems);
 
         return contextMenu;
     }
@@ -132,6 +167,14 @@ public class Street{
         }
 
         return angle;
+    }
+
+
+    public static Street getStreetByCoordinate(List<Street> streets, Coordinate coordinate) {
+        return null;
+
+
+
     }
 
     public Node getNode(){

@@ -19,12 +19,29 @@ public class BusRoute {
 
 
 
+    private List<Street> passingStreets = new ArrayList<>();
+
     private final List<IRoutePoint> routePoints;
     private List<BusStop> busStops = new ArrayList<>();
     private List<RouteSchedule> routeSchedules = new ArrayList<>();
     private Color color = Color.rgb(255, 0, 0);
     private final int routeNumber;
     private Node node = null;
+
+    public BusRoute(int routeNumber, List<IRoutePoint> routePoints) {
+        this.routeNumber = routeNumber;
+        this.routePoints = routePoints;
+
+        for(IRoutePoint routePoint : routePoints){
+            if(routePoint instanceof BusStop){
+                busStops.add((BusStop) routePoint);
+            }
+        }
+    }
+
+    public List<Street> getPassingStreets() {
+        return passingStreets;
+    }
 
     public List<BusStop> getStops() {
         return busStops;
@@ -40,17 +57,6 @@ public class BusRoute {
 
     public int getRouteNumber() {
         return routeNumber;
-    }
-
-    public BusRoute(int routeNumber, List<IRoutePoint> routePoints) {
-        this.routeNumber = routeNumber;
-        this.routePoints = routePoints;
-
-        for(IRoutePoint routePoint : routePoints){
-            if(routePoint instanceof BusStop){
-                busStops.add((BusStop) routePoint);
-            }
-        }
     }
 
     public List<RouteSchedule> getRouteSchedules() {
@@ -160,6 +166,46 @@ public class BusRoute {
             }
             routeSchedules.add(new RouteSchedule(entries));
         }
+    }
+
+    public void calculatePassingStreets(List<Street> allStreets){
+        for(Street street : allStreets){
+//            System.out.println( "check street: " + street.getName());
+//            if(isRoutePassingStreet(street, routePoints)){
+//                if(!passingStreets.contains(street)){
+//                    passingStreets.add(street);
+//                    System.out.println("route: " + routeNumber + ", add street: " + street.getName());
+//                }
+//            }
+            passingStreets.add(street);
+        }
+    }
+
+    private boolean isRoutePassingStreet(Street street, List<IRoutePoint> routePoints) {
+        List<IRoutePoint> routePointsNotBusStops = new ArrayList<>();
+        for(IRoutePoint routePoint : routePoints){
+            if(!(routePoint instanceof BusStop)){
+                routePointsNotBusStops.add(routePoint);
+            }
+        }
+
+
+        for (int i = 0; i < routePointsNotBusStops.size()-1; i++) {
+            for (int j = 0; j < street.getCoordinates().size()-1; j++) {
+                if(routePointsNotBusStops.get(i) == street.getCoordinate(j)){
+                    if(routePointsNotBusStops.get(i+1) == street.getCoordinate(j+1)){
+                        return true;
+                    }
+
+                    if(j-1 >= 0){
+                        if(routePointsNotBusStops.get(i+1) == street.getCoordinate(j-1)){
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 
 }

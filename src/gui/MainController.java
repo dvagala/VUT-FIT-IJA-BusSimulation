@@ -185,13 +185,22 @@ public class MainController  implements Initializable{
             JSONObject jBusRoute = (JSONObject) jBusRoutes.get(var);
             List<IRoutePoint> data = new ArrayList <>();
             for (JSONArray a : (ArrayList<JSONArray>) jBusRoute.get("data")){
-                int x = into(a.get(1)); // value contains idx of busStop or street
-                int y = into(a.get(2)); // value says which streetCoordinate should be used
-                if(a.get(0).equals("b")){ // if bus, else street
-                    data.add(busStops.get(x));
+                int z = into(a.get(0)); // value contains idx of street that is right behind this route point
+                int x = into(a.get(2)); // value contains idx of busStop or street
+                int y = into(a.get(3)); // value says which streetCoordinate should be used
+                IRoutePoint point;
+                if(a.get(1).equals("b")){ // if bus, else street
+                    point = busStops.get(x);
                 }else{
-                    data.add(streets.get(x).getCoordinate(y));
+                    point = streets.get(x).getCoordinate(y);
                 }
+                if(z == -1){   // last point
+                    point.setStreetAfter(null);
+                }
+                else{
+                    point.setStreetAfter(streets.get(z));
+                }
+                data.add(point);
             }
             BusRoute busRoute = new BusRoute(into(jBusRoute.get("id")), data);
             busRoute.setColor(Color.valueOf((String) jBusRoute.get("color")));
@@ -200,9 +209,9 @@ public class MainController  implements Initializable{
                 localTimes.add(LocalTime.of(into(s.get(0)),into(s.get(1))));
             }
             busRoute.setRouteSchedulesByFirstDepartureTimes(localTimes);
+            busRoute.calculatePassingStreets(streets);
             busRoutes.add(busRoute);
         }
-
 
 
         for(BusRoute route : busRoutes){

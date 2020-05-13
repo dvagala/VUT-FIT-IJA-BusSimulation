@@ -6,4 +6,6 @@ public interface IRoutePoint{
     int getY();
     void setX(int x);
     void setY(int y);
+    Street getStreetAfter();
+    void setStreetAfter(Street streetAfter);
 }
