@@ -166,7 +166,7 @@ public class MainController  implements Initializable{
                 Coordinate c = new Coordinate(into(jC.get(0)), into(jC.get(1))); //x,y value of coord
                 coordinates.add(c);
             }
-            Street street = new Street(coordinates);
+            Street street = new Street(coordinates, "main street");
             street.setColor(Color.valueOf((String) s.get("color")));
             streets.add(street);
         }

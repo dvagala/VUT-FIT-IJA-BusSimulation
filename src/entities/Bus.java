@@ -2,6 +2,7 @@ package entities;
 
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
@@ -54,8 +55,10 @@ public class Bus extends Coordinate {
         vBox.setAlignment(Pos.TOP_LEFT);
 
         vBox.setOnMouseClicked(event -> {
-            event.consume();
-            listener.busWasClicked();
+            if (event.getButton() == MouseButton.PRIMARY) {
+                event.consume();
+                listener.busWasClicked();
+            }
         });
 
 
