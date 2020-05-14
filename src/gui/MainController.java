@@ -25,6 +25,7 @@ import java.net.URL;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import  java.util.Collections;
 
 import static java.time.temporal.ChronoUnit.MINUTES;
 
@@ -61,6 +62,8 @@ public class MainController  implements Initializable{
     List<BusRoute> busRoutes = new ArrayList<>();
     List<Bus> visibleBuses = new ArrayList<>();
 
+    final Object o = new Object();
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
 
@@ -82,11 +85,12 @@ public class MainController  implements Initializable{
                 clockText.setText(currentTime.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
                 handleBusesVisibilityOnMap();
 
-                for(Bus visibleBus : visibleBuses){
+                for (Bus visibleBus : visibleBuses) {
                     visibleBus.updateNodePosition(currentTime);
                 }
 
                 currentTime = currentTime.plusNanos((long) (SimulationSettings.updateIntervalMs*1000000*SimulationSettings.speedRatio));
+
             }
         }, 0, SimulationSettings.updateIntervalMs);
 
@@ -95,9 +99,10 @@ public class MainController  implements Initializable{
     private void handleBusesVisibilityOnMap(){
         for(BusRoute busRoute : busRoutes){
             for(RouteSchedule routeSchedule : busRoute.getRouteSchedules()){
-                if(currentTime.until(routeSchedule.getFirstStopDepartureTime(), MINUTES) < Bus.minutesToWaitAtStopAtLeast && currentTime.compareTo(routeSchedule.getLastStopDepartureTime()) < 0){
+                if(currentTime.until(routeSchedule.getFirstStopDepartureTime(), MINUTES) < Bus.minutesToWaitAtStopAtLeast && currentTime.compareTo(routeSchedule.getLastStopNonDelayedDepartureTime()) < 0){
 //                    if(Bus.getVisibleBusByRouteAndSchedule(visibleBuses, busRoute, routeSchedule) == null){
                     if(routeSchedule.getBus() == null){
+//                        System.out.println("outeSchedule.getLastStopNonDelayedDepartureTime(): " + routeSchedule.getLastStopNonDelayedDepartureTime());
                         Bus bus = new Bus(busRoute, routeSchedule);
                         bus.setOnBusClickListener(new Bus.OnBusClickListener() {
                             @Override
@@ -275,27 +280,34 @@ public class MainController  implements Initializable{
 
     public void onSetTimeBtnClick() {
         Platform.runLater(() -> {
-            if(setTimeTextField.getText().isEmpty()){
-                return;
-            }
 
-            boolean timeWasSetCorrectly = true;
-            try{
-                currentTime = LocalTime.parse(setTimeTextField.getText(), DateTimeFormatter.ofPattern("HH:mm:ss"));
-            }catch (Exception e){
-                try{
-                    currentTime = LocalTime.parse(setTimeTextField.getText(), DateTimeFormatter.ofPattern("HH:mm"));
-                }catch (Exception e2){
-                    timeWasSetCorrectly = false;
-                    setTimeWrongFormatText.setVisible(true);
+                if (setTimeTextField.getText().isEmpty()) {
+                    return;
                 }
-            }finally {
-                setTimeTextField.clear();
-            }
 
-            if(timeWasSetCorrectly){
+                try {
+                    currentTime = LocalTime.parse(setTimeTextField.getText(), DateTimeFormatter.ofPattern("HH:mm:ss"));
+                } catch (Exception e) {
+                    try {
+                        currentTime = LocalTime.parse(setTimeTextField.getText(), DateTimeFormatter.ofPattern("HH:mm"));
+                    } catch (Exception e2) {
+                        setTimeWrongFormatText.setVisible(true);
+                        setTimeTextField.clear();
+                        return;
+                    }
+                }
+
+                setTimeTextField.clear();
                 setTimeWrongFormatText.setVisible(false);
-            }
+
+                SimulationSettings.startTime = currentTime;
+                onCloseDeparturesBtnClick();
+
+                for (Bus bus : visibleBuses) {
+                    bus.getCurrentRouteSchedule().setBus(null);
+                    mapPane.getChildren().remove(bus.getNode());
+                }
+                visibleBuses.clear();
         });
     }
 

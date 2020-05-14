@@ -7,5 +7,5 @@ public class SimulationSettings {
     // Simulation speed is same as normal time, if this is set to one
     public static double speedRatio = 50;
     public static int updateIntervalMs = 200;
-    public static LocalTime startTime = LocalTime.of(10, 25, 0, 0);
+    public static LocalTime startTime = LocalTime.of(10, 31, 0, 0);
 }

@@ -34,6 +34,9 @@ public class RouteSchedule {
       return entries.get(entries.size() - 1).getDepartureTime();
    }
 
+   public LocalTime getLastStopNonDelayedDepartureTime(){
+      return entries.get(entries.size() - 1).getNonDelayedDepartureTime();
+   }
 
    public boolean isBusOnMap() {
       return isBusOnMap;

@@ -9,10 +9,10 @@ public class RouteScheduleEntry {
 
     private boolean isDelayed = false;
 
-    public RouteScheduleEntry(BusStop busStop, LocalTime departureTime) {
+    public RouteScheduleEntry(BusStop busStop, LocalTime departureTime, LocalTime nonDelayedDepartureTime) {
         this.busStop = busStop;
         this.departureTime = departureTime;
-        this.nonDelayedDepartureTime = departureTime;
+        this.nonDelayedDepartureTime = nonDelayedDepartureTime;
     }
 
     public LocalTime getDepartureTime() {

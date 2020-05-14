@@ -86,6 +86,7 @@ public class Bus extends Coordinate {
         BusStop nextStop = getNextStop(currentTime);
 
         if(currentTime == SimulationSettings.startTime){
+//            System.out.println("first time");
             travelledDistance = getTravelledDistanceByTime(currentTime, nextStop);
             return;
         }
@@ -116,6 +117,12 @@ public class Bus extends Coordinate {
         if(travelledDistance > distanceFromStartToNextStop){
             travelledDistance = distanceFromStartToNextStop;
         }
+        // Prevent weird bug
+        if(travelledDistance < 0){
+            travelledDistance = 0;
+        }
+
+//        System.out.println("travelledDistance: " + travelledDistance);
 
         Coordinate newBusPosition = getCoordinateByTravelledDistance(travelledDistance);
         setNodePosition(newBusPosition);
@@ -141,7 +148,7 @@ public class Bus extends Coordinate {
         }
 
         if(a.getStreetAfter() != null && busTextNode != null){
-            busTextNode.setText(busRoute.getRouteNumber() + ", " + a.getStreetAfter().getName());
+//            busTextNode.setText(busRoute.getRouteNumber() + ", " + a.getStreetAfter().getName());
             return currentStreetTrafficRate = a.getStreetAfter().getTrafficRate();
         }
         return 1;
