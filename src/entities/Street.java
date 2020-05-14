@@ -18,6 +18,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Predstavuje ulicu, ku ktorej sa daju pridavat rozne urovne ztazenych dopravnych podmienok.
+ * V tom pripade autobusy prechadzaju ulicou pomalsie.
+ * @author Dominik Vagala (xvagal00)
+ * @author Jakub Vinš (xvinsj00)
+ */
 public class Street{
 
     private final List<Coordinate> coordinates;
@@ -107,16 +113,13 @@ public class Street{
                 streetNameTextNode = new Text(first.getX()+(second.getX()-first.getX())/2 -30, first.getY()+(second.getY()-first.getY())/2 -4, this.name);
                 streetNameTextNode.getTransforms().add(new Rotate(getAngle(first, second), first.getX()+(second.getX()-first.getX())/2, first.getY()+(second.getY()-first.getY())/2));
                 streetNameTextNode.setStyle("-fx-font: 10 arial;");
-                streetNameTextNode.setOnMouseClicked(new EventHandler<MouseEvent>() {
-                    @Override
-                    public void handle(MouseEvent event) {
-                        if (event.getButton() == MouseButton.SECONDARY) {
-                            Platform.runLater(() -> contextMenu.show(pane, event.getScreenX(), event.getScreenY()));
-                        }else if (event.getButton() == MouseButton.PRIMARY) {
-                            listener.streetNameWasClicked(streetNameTextNode);
-                        }
-                        event.consume();
+                streetNameTextNode.setOnMouseClicked(event -> {
+                    if (event.getButton() == MouseButton.SECONDARY) {
+                        Platform.runLater(() -> contextMenu.show(pane, event.getScreenX(), event.getScreenY()));
+                    }else if (event.getButton() == MouseButton.PRIMARY) {
+                        listener.streetNameWasClicked(streetNameTextNode);
                     }
+                    event.consume();
                 });
                 pane.getChildren().add(streetNameTextNode);
             }

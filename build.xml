@@ -1,11 +1,15 @@
-<project name="IJA" basedir="." default="main">
+<project name="ija" basedir="." default="main">
 
     <property name="src" value="src"/>
     <property name="build" value="build"/>
     <property name="doc" value="doc"/>
     <property name="dest" value="dest"/>
-
     <property name="main-class"  value="Main"/>
+    <property name="lib"  value="lib"/>
+
+    <path id="classpath">
+        <fileset dir="${lib}" includes="**/*.jar"/>
+    </path>
 
     <target name="clean">
         <delete dir="${build}"/>
@@ -17,44 +21,39 @@
 
     <target name="compile-classes" depends="clean">
         <mkdir dir="${build}"/>
-        <javac srcdir="${src}" destdir="${build}" debug="true" includeantruntime="false"></javac>
+        <javac srcdir="${src}" destdir="${build}" debug="true" includeantruntime="false" classpathref="classpath"/>
         <copy todir="${build}">
-            <fileset dir="${src}" includes="**/*.fxml"></fileset>
-            <fileset dir="${src}" includes="**/*.css"></fileset>
+            <fileset dir="${src}" includes="**/*.fxml"/>
         </copy>
     </target>
 
     <target name="compile" depends="compile-classes">
         <mkdir dir="${dest}"/>
-        <jar destfile="${dest}/ija-client.jar" basedir="${build}">
+        <jar destfile="${dest}/ija-app.jar" basedir="${build}">
             <manifest><attribute name="Main-Class" value="${main-class}"/></manifest>
         </jar>
     </target>
 
     <target name="doc" depends="clean-doc">
         <mkdir dir="${doc}"/>
-        <javadoc locale="cs_CZ"
-            packagenames="blocks, gui, connections, repository, connections.dataTypes"
-            sourcepath="src"
-            excludepackagenames=""
-            defaultexcludes="yes"
-            destdir="${doc}"
-            author="true"
-            version="true"
-            use="true"
-            windowtitle="IJA PROJEKT"
-            charset="UTF-8">
-            <doctitle><![CDATA[<h1>IJA PROJEKT</h1>]]></doctitle>
-            <bottom><![CDATA[<i>Autor: David Hříbek, Dominik Ruta</i>]]></bottom>
+        <javadoc sourcepath="${src}" destdir="${doc}">
+            <classpath>
+                <fileset dir="${lib}">
+                    <include name="json-simple-1.1.jar"/>
+                </fileset>
+            </classpath>
         </javadoc>
     </target>
 
     <target name="run" depends="compile">
-        <java jar="${dest}/ija-client.jar" fork="true"/>
+        <java fork="true" classname="${main-class}">
+            <classpath>
+                <path refid="classpath"/>
+                <path location="${dest}/ija-app.jar"/>
+            </classpath>
+        </java>
     </target>
 
     <target name="clean-build" depends="clean,compile"/>
-
     <target name="main" depends="clean,run"/>
-
 </project>

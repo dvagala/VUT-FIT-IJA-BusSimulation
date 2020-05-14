@@ -2,6 +2,11 @@ package entities;
 
 import java.time.LocalTime;
 
+/**
+ * Predstavuje jednu polozku v trase autobusu. Obsahuje ulicu a cas kedy z nej autobus oddide.
+ * @author Dominik Vagala (xvagal00)
+ * @author Jakub Vinš (xvinsj00)
+ */
 public class RouteScheduleEntry {
     private BusStop busStop;
     private LocalTime departureTime;

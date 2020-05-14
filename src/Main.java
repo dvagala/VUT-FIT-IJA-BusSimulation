@@ -4,7 +4,11 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-
+/**
+ * Touto triedou je program spusteny. Nacitanie sceny, vytvorenie okna.
+ * @author Dominik Vagala (xvagal00)
+ * @author Jakub Vinš (xvinsj00)
+ */
 public class Main extends Application {
 
     public static void main(String[] args) {

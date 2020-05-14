@@ -1,6 +1,11 @@
 package entities;
 
 
+/**
+ * Predstavuje bod na mape, alebo "route point" ktory predstavuje autobusovu zastavku, alebo zlom ulice.
+ * @author Dominik Vagala (xvagal00)
+ * @author Jakub Vinš (xvinsj00)
+ */
 public class Coordinate implements IRoutePoint {
     private int x;
     private int y;
@@ -31,7 +36,6 @@ public class Coordinate implements IRoutePoint {
     public Street getStreetAfter() {
         return streetAfter;
     }
-
     public void setStreetAfter(Street streetAfter) {
         this.streetAfter = streetAfter;
     }

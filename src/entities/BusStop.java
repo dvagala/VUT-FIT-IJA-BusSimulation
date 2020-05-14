@@ -7,6 +7,11 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Polygon;
 import javafx.scene.text.Text;
 
+/**
+ * Predstavuje autobusovu zastavku.
+ * @author Dominik Vagala (xvagal00)
+ * @author Jakub Vinš (xvinsj00)
+ */
 public class BusStop extends Coordinate {
 
     public String getName() {

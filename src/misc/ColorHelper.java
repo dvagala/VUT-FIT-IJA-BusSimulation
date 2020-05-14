@@ -2,6 +2,11 @@ package misc;
 
 import javafx.scene.paint.Color;
 
+/**
+ * Tato trieda sluzi na ziskanie bledsej farby z povodnej.
+ * @author Dominik Vagala (xvagal00)
+ * @author Jakub Vinš (xvinsj00)
+ */
 public class ColorHelper {
     public static Color getLighterColor(Color formerColor, double lightness){
 

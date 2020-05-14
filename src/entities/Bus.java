@@ -17,11 +17,14 @@ import static entities.BusRoute.getDistanceBetweenRoutePoints;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 
+/**
+ * Predstavuje konkretny autobus, ktory moze byt vykresleny na mape.
+ * @author Dominik Vagala (xvagal00)
+ * @author Jakub Vinš (xvinsj00)
+ */
 public class Bus extends Coordinate {
 
     private final BusRoute busRoute;
-
-
     private RouteSchedule currentRouteSchedule;
     public static double speedPixelsPerSecond = 2;
     public int currentStreetTrafficRate = 1;
@@ -31,8 +34,6 @@ public class Bus extends Coordinate {
     public static int minutesToWaitAtStopAtLeast = 2;
     private Text busTextNode;
     private IRoutePoint lastVisitedRoutePoint = null;
-
-
     private OnBusClickListener listener;
 
     public Bus(BusRoute busRoute, RouteSchedule routeSchedule) {
@@ -69,7 +70,6 @@ public class Bus extends Coordinate {
             }
         });
 
-
         return vBox;
     }
 
@@ -84,10 +84,12 @@ public class Bus extends Coordinate {
         return node;
     }
 
+    // Move bus on map
     public void updateNodePosition(LocalTime currentTime){
 
         BusStop nextStop = getNextStop(currentTime);
 
+        // Bus position is calculated by time only on the start of simulation
         if(currentTime == SimulationSettings.startTime){
             travelledDistance = getTravelledDistanceByTime(currentTime, nextStop);
             return;
@@ -105,6 +107,7 @@ public class Bus extends Coordinate {
 
         currentStreetTrafficRate = getCurrentStreetTrafficRate(travelledDistance);
 
+        // Position is calculated as simulation, every tick of main loop travelled distance gets bigger
         travelledDistance += (speedPixelsPerSecond*((double)(SimulationSettings.updateIntervalMs)/1000)*SimulationSettings.speedRatio)/currentStreetTrafficRate;
 
         double distanceFromStartToNextStop = busRoute.getDistanceFromStartToRoutePoint(nextStop);
@@ -113,6 +116,7 @@ public class Bus extends Coordinate {
         if(travelledDistance > distanceFromStartToNextStop){
             travelledDistance = distanceFromStartToNextStop;
         }
+
         // Prevent weird bug
         if(travelledDistance < 0){
             travelledDistance = 0;

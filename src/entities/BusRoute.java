@@ -12,6 +12,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Predstavuje autobusovu linku, ktora sa sklada z "route points" co su autobusove zastavky, alebo zlomy ulic.
+ * Jedna linka moze obsahovat viac odchodov autobusov.
+ * @author Dominik Vagala (xvagal00)
+ * @author Jakub Vinš (xvinsj00)
+ */
 public class BusRoute {
 
     private final List<IRoutePoint> routePoints;
@@ -151,6 +157,8 @@ public class BusRoute {
         return 0;
     }
 
+    // This will automatically calculate departure times from bus stops, just by departure time from very first bus stop and simulation settings
+    // It will create new RouteSchedules. It is used when bus is not visible on map.
     public List<RouteScheduleEntry> getCalculatedEntriesByFirstDepartureTime(LocalTime firstDepartureTime){
         List<RouteScheduleEntry> entries = new ArrayList<>();
         entries.add(new RouteScheduleEntry(busStops.get(0), firstDepartureTime, firstDepartureTime));
@@ -213,6 +221,9 @@ public class BusRoute {
         }
     }
 
+
+    // This will automatically calculate departure times from bus stops, just by departure time from very first bus stop and simulation settings
+    // This will not create new RouteSchedules, just update existing. It is used when bus is already visible on map
     private void recalculateEntriesWhenBusIsVisible(RouteSchedule routeSchedule, LocalTime currentTime) {
 
         int lastVisitedRoutePointIndex = routePoints.lastIndexOf(routeSchedule.getBus().getLastVisitedRoutePoint());

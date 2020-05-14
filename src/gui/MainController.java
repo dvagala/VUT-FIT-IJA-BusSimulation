@@ -32,6 +32,11 @@ import java.util.List;
 
 import static java.time.temporal.ChronoUnit.MINUTES;
 
+/**
+ * Tato trieda ovlada hlavnu smycku programu, kde sa vykonava simulacia a obsluhuju sa vstupy od uzivatela.
+ * @author Dominik Vagala (xvagal00)
+ * @author Jakub Vinš (xvinsj00)
+ */
 public class MainController  implements Initializable{
 
     @FXML
@@ -67,11 +72,12 @@ public class MainController  implements Initializable{
     @FXML
     public ScrollPane scrollPane;
 
+    // Simulation clock time
     private LocalTime currentTime = SimulationSettings.startTime;
     List<BusRoute> busRoutes = new ArrayList<>();
-    List<Bus> visibleBuses = new ArrayList<>();
 
-    final Object o = new Object();
+    // Buses that are currently shown on map
+    List<Bus> visibleBuses = new ArrayList<>();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -84,37 +90,39 @@ public class MainController  implements Initializable{
         });
 
         this.setUpData();
-
         Timer timer = new Timer();
+
+        // Simulation main loop
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                if(nowModifyingRoute){
-                    for (Bus bus : visibleBuses) {
-                        bus.getCurrentRouteSchedule().setBus(null);
-                        Platform.runLater(() -> {
-                            mapPane.getChildren().remove(bus.getNode());
-                        });
-                    }
-                    visibleBuses.clear();
-                    currentTime = SimulationSettings.startTime;
-                    return;
+            if(nowModifyingRoute){
+                for (Bus bus : visibleBuses) {
+                    bus.getCurrentRouteSchedule().setBus(null);
+                    Platform.runLater(() -> {
+                        mapPane.getChildren().remove(bus.getNode());
+                    });
                 }
+                visibleBuses.clear();
+                currentTime = SimulationSettings.startTime;
+                return;
+            }
 
-                clockText.setText(currentTime.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
-                handleBusesVisibilityOnMap();
+            clockText.setText(currentTime.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+            handleBusesVisibilityOnMap();
 
-                for (Bus visibleBus : visibleBuses) {
-                    visibleBus.updateNodePosition(currentTime);
-                }
+            // Move all buses based on time or distance they've travelled
+            for (Bus visibleBus : visibleBuses) {
+                visibleBus.updateNodePosition(currentTime);
+            }
 
-                currentTime = currentTime.plusNanos((long) (SimulationSettings.updateIntervalMs*1000000*SimulationSettings.speedRatio));
-
+            currentTime = currentTime.plusNanos((long) (SimulationSettings.updateIntervalMs*1000000*SimulationSettings.speedRatio));
             }
         }, 0, SimulationSettings.updateIntervalMs);
-
     }
 
+    // This will place bus on map if it should be there according to their Route Schedule
+    // Also removes bus if drived to the last stop
     private void handleBusesVisibilityOnMap(){
         for(BusRoute busRoute : busRoutes){
             for(RouteSchedule routeSchedule : busRoute.getRouteSchedules()){
@@ -151,8 +159,10 @@ public class MainController  implements Initializable{
         }
     }
 
+    // When user click to bus to highlight route and see departure times, here will be that clicked bus
     private Bus selectedBus = null;
 
+    // Show departure times to user
     private void fillRouteDeparturesGridPane( Bus selectedBus){
         routeDeparturesGridPane.getChildren().clear();
         this.selectedBus = selectedBus;
@@ -167,16 +177,19 @@ public class MainController  implements Initializable{
         }
 
     }
+
+    // Long to int
     private int into(Object x){ //Long to int
         return ((Long)x).intValue();
     }
 
+    // Parse data about map and buses from json file
     private void setUpData() {
         JSONObject jo = new JSONObject();
         JSONParser parser = new JSONParser();
         try {
-//            Object obj = parser.parse(new FileReader("data.json"));
-            Object obj = parser.parse(new FileReader("data-simple.json"));
+            Object obj = parser.parse(new FileReader("data/data.json"));
+//            Object obj = parser.parse(new FileReader("data/data-simple.json"));
             jo = (JSONObject) obj;
         } catch (IOException e) {
             e.printStackTrace();
@@ -430,6 +443,7 @@ public class MainController  implements Initializable{
     }
 
 
+    // When user wants to modify route it will switch to this mode
     private boolean nowModifyingRoute = false;
     private BusRoute modifiedBusRoute;
     private List<LocalTime> modifiedBusRouteFirstDepartureTimes = new ArrayList<>();
@@ -437,6 +451,7 @@ public class MainController  implements Initializable{
     @FXML
     private Text routeModifyWarningText;
 
+    // This will handle entering and exiting from modifying route mode
     public void onModifyRouteBtnClick() {
         if(nowModifyingRoute){
             nowModifyingRoute = false;

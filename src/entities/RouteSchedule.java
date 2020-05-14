@@ -3,6 +3,12 @@ package entities;
 import java.time.LocalTime;
 import java.util.List;
 
+
+/**
+ * Predstavuje jednu trasu autobusu, ktora obsauje zoznam zastavok a odchodu z nich.
+ * @author Dominik Vagala (xvagal00)
+ * @author Jakub Vinš (xvinsj00)
+ */
 public class RouteSchedule {
 
    private List<RouteScheduleEntry> entries;
