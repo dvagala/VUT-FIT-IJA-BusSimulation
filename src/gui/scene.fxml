@@ -47,6 +47,19 @@
                             <ColumnConstraints hgrow="SOMETIMES" maxWidth="134.0" minWidth="10.0" prefWidth="79.0" />
                           </columnConstraints>
                         </GridPane>
+                        <HBox fx:id="modifyRouteHbox" alignment="CENTER_RIGHT" prefHeight="84.0" prefWidth="192.0">
+                           <children>
+                              <Button fx:id="modifyRouteBtn" alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false" onMouseClicked="#onModifyRouteBtnClick" prefHeight="26.0" prefWidth="163.0" text="Modify route" visible="false" />
+                           </children>
+                           <VBox.margin>
+                              <Insets top="15.0" />
+                           </VBox.margin>
+                        </HBox>
+                        <Text fx:id="routeModifyWarningText" fill="RED" strokeType="OUTSIDE" strokeWidth="0.0" text="Warning!" visible="false" wrappingWidth="160.0">
+                           <font>
+                              <Font name="System Bold" size="13.0" />
+                           </font>
+                        </Text>
                      </children>
                      <padding>
                         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
@@ -90,6 +103,11 @@
                      <font>
                         <Font size="11.0" />
                      </font>
+                  </Text>
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Right click on street name to set traffic rate" wrappingWidth="160.0">
+                     <VBox.margin>
+                        <Insets top="15.0" />
+                     </VBox.margin>
                   </Text>
                </children>
                <padding>

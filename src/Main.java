@@ -15,7 +15,7 @@ public class Main extends Application {
         Parent root = FXMLLoader.load(getClass().getResource("gui/scene.fxml"));
         Scene scene = new Scene(root, 1280, 720);
         primaryStage.setScene(scene);
-        primaryStage.setTitle("Factory Builder");
+        primaryStage.setTitle("Ija bus map");
         primaryStage.show();
     }
 }

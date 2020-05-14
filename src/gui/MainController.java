@@ -6,12 +6,15 @@ import entities.*;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.input.ScrollEvent;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Pane;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Polygon;
 import javafx.scene.text.Text;
 import misc.SimulationSettings;
 import org.json.simple.JSONArray;
@@ -25,7 +28,7 @@ import java.net.URL;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import  java.util.Collections;
+import java.util.List;
 
 import static java.time.temporal.ChronoUnit.MINUTES;
 
@@ -48,6 +51,12 @@ public class MainController  implements Initializable{
 
     @FXML
     private Text routeDeparturesNumberText;
+
+    @FXML
+    private HBox modifyRouteHbox;
+
+    @FXML
+    private Button modifyRouteBtn;
 
     @FXML
     public GridPane routeDeparturesGridPane;
@@ -80,8 +89,18 @@ public class MainController  implements Initializable{
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-//                System.out.println("neu frame");
-//                System.out.println("neu frame, curr time: " + currentTime);
+                if(nowModifyingRoute){
+                    for (Bus bus : visibleBuses) {
+                        bus.getCurrentRouteSchedule().setBus(null);
+                        Platform.runLater(() -> {
+                            mapPane.getChildren().remove(bus.getNode());
+                        });
+                    }
+                    visibleBuses.clear();
+                    currentTime = SimulationSettings.startTime;
+                    return;
+                }
+
                 clockText.setText(currentTime.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
                 handleBusesVisibilityOnMap();
 
@@ -100,27 +119,20 @@ public class MainController  implements Initializable{
         for(BusRoute busRoute : busRoutes){
             for(RouteSchedule routeSchedule : busRoute.getRouteSchedules()){
                 if(currentTime.until(routeSchedule.getFirstStopDepartureTime(), MINUTES) < Bus.minutesToWaitAtStopAtLeast && currentTime.compareTo(routeSchedule.getLastStopNonDelayedDepartureTime()) < 0){
-//                    if(Bus.getVisibleBusByRouteAndSchedule(visibleBuses, busRoute, routeSchedule) == null){
                     if(routeSchedule.getBus() == null){
-//                        System.out.println("outeSchedule.getLastStopNonDelayedDepartureTime(): " + routeSchedule.getLastStopNonDelayedDepartureTime());
                         Bus bus = new Bus(busRoute, routeSchedule);
-                        bus.setOnBusClickListener(new Bus.OnBusClickListener() {
-                            @Override
-                            public void busWasClicked() {
-                                Platform.runLater(() -> {
-
-                                    for(BusRoute r : busRoutes){
-                                        r.getNode().setOpacity(0.0);
-                                    }
-                                    Pane nodeLayout = (Pane) busRoute.getNode();
-                                    nodeLayout.setOpacity(0.5);
-
-                                    routeDeparturesGridPane.getChildren().clear();
-                                    fillRouteDeparturesGridPane(bus);
-                                    routeDeparturesNumberText.setText("Route number " + bus.getBusRoute().getRouteNumber());
-                                });
+                        bus.setOnBusClickListener(() -> Platform.runLater(() -> {
+                            for(BusRoute r : busRoutes){
+                                r.getNode().setOpacity(0.0);
                             }
-                        });
+                            Pane nodeLayout = (Pane) busRoute.getNode();
+                            nodeLayout.setOpacity(0.5);
+
+                            routeDeparturesGridPane.getChildren().clear();
+                            fillRouteDeparturesGridPane(bus);
+                            routeDeparturesNumberText.setText("Route number " + bus.getBusRoute().getRouteNumber());
+                            modifyRouteBtn.setVisible(true);
+                        }));
                         visibleBuses.add(bus);
                         routeSchedule.setBus(bus);
                         Platform.runLater(() -> mapPane.getChildren().add(bus.getNode()));
@@ -132,9 +144,6 @@ public class MainController  implements Initializable{
                         routeSchedule.setBus(null);
                         Platform.runLater(() ->{
                             mapPane.getChildren().remove(bus.getNode());
-                            if(bus == selectedBus){
-                                onCloseDeparturesBtnClick();
-                            }
                         });
                     }
                 }
@@ -166,8 +175,8 @@ public class MainController  implements Initializable{
         JSONObject jo = new JSONObject();
         JSONParser parser = new JSONParser();
         try {
-            Object obj = parser.parse(new FileReader("data.json"));
-//            Object obj = parser.parse(new FileReader("data-simple.json"));
+//            Object obj = parser.parse(new FileReader("data.json"));
+            Object obj = parser.parse(new FileReader("data-simple.json"));
             jo = (JSONObject) obj;
         } catch (IOException e) {
             e.printStackTrace();
@@ -238,34 +247,124 @@ public class MainController  implements Initializable{
             busRoutes.add(busRoute);
         }
 
-//        System.out.println(streets.size());
-
         for(BusRoute route : busRoutes){
             mapPane.getChildren().addAll(route.getNode());
+        }
+
+        for(BusStop s : busStops){
+            mapPane.getChildren().addAll(s.getNode());
+            s.setOnBusStopClickListener((Polygon polygon) -> {
+               if(nowModifyingRoute) {
+                   Platform.runLater(() -> {
+                       if(modifiedBusRoute.getRoutePoints().size() > 0){
+                           if(modifiedBusRoute.getLastRoutePoint().getStreetAfter() == null){
+                               routeModifyWarningText.setText("Click on street name that comes out of the route point!");
+                               routeModifyWarningText.setVisible(true);
+                               return;
+                           }
+                       }
+
+                       routeModifyWarningText.setVisible(false);
+                       polygon.setFill(Color.RED);
+                       s.setStreetAfter(null);
+                       modifiedBusRoute.addPoint(s);
+                       modifiedBusRoute.addBusStop(s);
+                       modifiedBusRoute.updateNode();
+
+                       modifiedBusRoute.clearRouteSchedules();
+                       modifiedBusRoute.setRouteSchedulesByFirstDepartureTimes(modifiedBusRouteFirstDepartureTimes);
+
+                       for(RouteSchedule routeSchedule : modifiedBusRoute.getRouteSchedules()){
+                           if(routeSchedule.getFirstStopDepartureTime() == selectedBus.getCurrentRouteSchedule().getFirstStopDepartureTime()){
+                               selectedBus.setCurrentRouteSchedule(routeSchedule);
+                           }
+                       }
+
+                       fillRouteDeparturesGridPane(selectedBus);
+                   });
+               }
+            });
         }
 
         for(Street s : streets){
             mapPane.getChildren().addAll(s.getNode());
 
-            s.setOnTrafficChangeListener(trafficRate -> {
-                for(BusRoute busRoute : busRoutes){
-                    busRoute.recalculateDepartureTimes(currentTime);
-                    if(selectedBus != null){
-//                        System.out.println("fill de p times");
-                        fillRouteDeparturesGridPane(selectedBus);
+            s.setOnTrafficChangeListener(new Street.Listener() {
+                @Override
+                public void trafficHasChanged(int trafficRate) {
+                    for(BusRoute busRoute : busRoutes){
+                        busRoute.recalculateDepartureTimes(currentTime);
+                        if(selectedBus != null){
+                            fillRouteDeparturesGridPane(selectedBus);
+                        }
+                    }
+                }
+
+                @Override
+                public void streetEndingCircleWasClicked(Circle c) {
+                    if(nowModifyingRoute) {
+                        Platform.runLater(() -> {
+                            if(modifiedBusRoute.getRoutePoints().size() > 0){
+                                if(modifiedBusRoute.getLastRoutePoint().getStreetAfter() == null){
+                                    routeModifyWarningText.setText("Click on street name that comes out of the route point!");
+                                    routeModifyWarningText.setVisible(true);
+                                    return;
+                                }
+                            }
+                            if(modifiedBusRoute.getRoutePoints().size() == 0){
+                                routeModifyWarningText.setText("First route point has to be a Bus Stop!");
+                                routeModifyWarningText.setVisible(true);
+                                return;
+                            }
+
+                            routeModifyWarningText.setVisible(false);
+                            c.setFill(Color.RED);
+                            IRoutePoint routePoint = new Coordinate((int) c.getCenterX(), (int) c.getCenterY());
+                            routePoint.setStreetAfter(null);
+                            modifiedBusRoute.addRoutePoint(routePoint);
+                            modifiedBusRoute.updateNode();
+                        });
+                    }
+                }
+
+                @Override
+                public void streetNameWasClicked(Text streetNameTextNode) {
+                    if(nowModifyingRoute) {
+                        Platform.runLater(() -> {
+                            if(modifiedBusRoute.getRoutePoints().size() > 0){
+                                if(modifiedBusRoute.getLastRoutePoint().getStreetAfter() != null){
+                                    routeModifyWarningText.setText("Click on route point!");
+                                    routeModifyWarningText.setVisible(true);
+                                    return;
+                                }
+                            }
+
+                            if(modifiedBusRoute.getRoutePoints().size() == 0){
+                                routeModifyWarningText.setText("Click on a Bus Stop to start route!");
+                                routeModifyWarningText.setVisible(true);
+                                return;
+                            }
+
+                            routeModifyWarningText.setVisible(false);
+                            streetNameTextNode.setFill(Color.RED);
+                            new java.util.Timer().schedule(
+                                    new java.util.TimerTask() {
+                                        @Override
+                                        public void run() {
+                                            streetNameTextNode.setFill(Color.BLACK);
+                                        }
+                                    },
+                                    700
+                            );
+                            modifiedBusRoute.getLastRoutePoint().setStreetAfter(s);
+                        });
                     }
                 }
             });
         }
-
-        for(BusStop s : busStops){
-            mapPane.getChildren().addAll(s.getNode());
-        }
-
     }
 
     public void onCloseDeparturesBtnClick() {
-
         Platform.runLater(() -> {
             for(BusRoute r : busRoutes){
                 r.getNode().setOpacity(0.0);
@@ -273,41 +372,39 @@ public class MainController  implements Initializable{
 
             routeDeparturesNumberText.setText("Click on bus to see departures");
             routeDeparturesGridPane.getChildren().clear();
+            modifyRouteBtn.setVisible(false);
         });
-
-        selectedBus = null;
     }
 
     public void onSetTimeBtnClick() {
         Platform.runLater(() -> {
+            if (setTimeTextField.getText().isEmpty()) {
+                return;
+            }
 
-                if (setTimeTextField.getText().isEmpty()) {
+            try {
+                currentTime = LocalTime.parse(setTimeTextField.getText(), DateTimeFormatter.ofPattern("HH:mm:ss"));
+            } catch (Exception e) {
+                try {
+                    currentTime = LocalTime.parse(setTimeTextField.getText(), DateTimeFormatter.ofPattern("HH:mm"));
+                } catch (Exception e2) {
+                    setTimeWrongFormatText.setVisible(true);
+                    setTimeTextField.clear();
                     return;
                 }
+            }
 
-                try {
-                    currentTime = LocalTime.parse(setTimeTextField.getText(), DateTimeFormatter.ofPattern("HH:mm:ss"));
-                } catch (Exception e) {
-                    try {
-                        currentTime = LocalTime.parse(setTimeTextField.getText(), DateTimeFormatter.ofPattern("HH:mm"));
-                    } catch (Exception e2) {
-                        setTimeWrongFormatText.setVisible(true);
-                        setTimeTextField.clear();
-                        return;
-                    }
-                }
+            setTimeTextField.clear();
+            setTimeWrongFormatText.setVisible(false);
 
-                setTimeTextField.clear();
-                setTimeWrongFormatText.setVisible(false);
+            SimulationSettings.startTime = currentTime;
+            onCloseDeparturesBtnClick();
 
-                SimulationSettings.startTime = currentTime;
-                onCloseDeparturesBtnClick();
-
-                for (Bus bus : visibleBuses) {
-                    bus.getCurrentRouteSchedule().setBus(null);
-                    mapPane.getChildren().remove(bus.getNode());
-                }
-                visibleBuses.clear();
+            for (Bus bus : visibleBuses) {
+                bus.getCurrentRouteSchedule().setBus(null);
+                mapPane.getChildren().remove(bus.getNode());
+            }
+            visibleBuses.clear();
         });
     }
 
@@ -330,6 +427,67 @@ public class MainController  implements Initializable{
 
             setSpeedTextField.clear();
         });
+    }
+
+
+    private boolean nowModifyingRoute = false;
+    private BusRoute modifiedBusRoute;
+    private List<LocalTime> modifiedBusRouteFirstDepartureTimes = new ArrayList<>();
+
+    @FXML
+    private Text routeModifyWarningText;
+
+    public void onModifyRouteBtnClick() {
+        if(nowModifyingRoute){
+            nowModifyingRoute = false;
+            modifyRouteBtn.setText("Modify route");
+            modifyRouteHbox.getChildren().remove(0);
+            routeModifyWarningText.setVisible(false);
+
+            for(IRoutePoint routePoint : modifiedBusRoute.getRoutePoints()){
+                if(routePoint instanceof BusStop){
+                    BusStop busStop = (BusStop) routePoint;
+                    VBox vBox = (VBox) busStop.getNode();
+                    Polygon polygon = (Polygon) vBox.getChildren().get(0);
+                    polygon.setFill(Color.BLUE);
+                }else{
+                    Pane pane = (Pane) routePoint.getStreetAfter().getNode();
+                    for(Node child : pane.getChildren()){
+                        if(child instanceof Circle){
+                            Circle c = (Circle) child;
+                            c.setFill(Color.PINK);
+                        }
+                    }
+                }
+            }
+
+            for(BusRoute r : busRoutes){
+                r.getNode().setOpacity(0.0);
+            }
+
+            onCloseDeparturesBtnClick();
+
+        }else{
+            nowModifyingRoute = true;
+            Text modifyRouteText = new Text("Select route points with following streets.");
+            modifyRouteText.setWrappingWidth(134);
+            modifyRouteHbox.getChildren().add(0, modifyRouteText);
+            modifyRouteBtn.setText("ok");
+
+            modifiedBusRoute = selectedBus.getBusRoute();
+            modifiedBusRoute.clearBusStopss();
+            modifiedBusRoute.clearRoutePoints();
+
+            for (RouteSchedule routeSchedule : selectedBus.getBusRoute().getRouteSchedules()){
+                modifiedBusRouteFirstDepartureTimes.add(routeSchedule.getFirstStopDepartureTime());
+            }
+
+            Platform.runLater(() -> {
+                Pane pane = (Pane) modifiedBusRoute.getNode();
+                pane.getChildren().clear();
+                routeDeparturesGridPane.getChildren().clear();
+            });
+        }
     }
 }
 

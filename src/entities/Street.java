@@ -1,8 +1,6 @@
 package entities;
 
 import javafx.application.Platform;
-import javafx.event.ActionEvent;
-import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.control.ContextMenu;
@@ -24,11 +22,7 @@ public class Street{
 
     private final List<Coordinate> coordinates;
     private Color color = Color.BLACK;
-
-
     private int trafficRate = 1;
-
-
     private String name;
     private Listener listener;
 
@@ -37,42 +31,24 @@ public class Street{
         this.name = name;
     }
 
-    public List<Coordinate> getCoordinates() {
-        return coordinates;
-    }
-
     public int getTrafficRate() {
         return trafficRate;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public void setColor(Color color) {
         this.color = color;
     }
+
     public Coordinate getCoordinate(int index) {
         return coordinates.get(index);
     }
-    public void addCoordinate(Coordinate coordinate){
-        coordinates.add(coordinate);
-    }
+
     private Node node = null;
 
     private Text streetNameTextNode = null;
 
     private ContextMenu setUpContextMenu(){
-
-
-
         final ContextMenu contextMenu = new ContextMenu();
-
-
         List<MenuItem> menuItems = Arrays.asList(
                 new MenuItem("Traffic 1x"),
                 new MenuItem("Traffic 2x"),
@@ -89,7 +65,6 @@ public class Street{
         for (int i = 0; i < menuItems.size(); i++) {
             int finalI = i;
             menuItems.get(i).setOnAction(event -> {
-//                System.out.println("traf: " + (finalI +1));
                 Platform.runLater(() -> {
                     if(finalI == 0){
                         streetNameTextNode.setText(name);
@@ -100,9 +75,7 @@ public class Street{
                 trafficRate = finalI + 1;
                 listener.trafficHasChanged(trafficRate);
             });
-
         }
-
         contextMenu.getItems().addAll(menuItems);
 
         return contextMenu;
@@ -115,21 +88,13 @@ public class Street{
         pane.setLayoutY(0);
 
         ContextMenu contextMenu = setUpContextMenu();
-        EventHandler<MouseEvent> contextMenuShowHandler = event -> {
-            if (event.getButton() == MouseButton.SECONDARY) {
-                Platform.runLater(() -> contextMenu.show(pane, event.getScreenX(), event.getScreenY()));
-            }
-
-            event.consume();
-        };
-
         for (Coordinate coordinate : coordinates) {
             Circle c = new Circle(coordinate.getX(), coordinate.getY(), 7, Color.PINK);
 
             c.setMouseTransparent(false);
             c.setOnMouseClicked(event -> {
-//                System.out.println("circle clicked");
-//                event.consume();
+                listener.streetEndingCircleWasClicked(c);
+                event.consume();
             });
 
             pane.getChildren().add(c);
@@ -142,23 +107,24 @@ public class Street{
                 streetNameTextNode = new Text(first.getX()+(second.getX()-first.getX())/2 -30, first.getY()+(second.getY()-first.getY())/2 -4, this.name);
                 streetNameTextNode.getTransforms().add(new Rotate(getAngle(first, second), first.getX()+(second.getX()-first.getX())/2, first.getY()+(second.getY()-first.getY())/2));
                 streetNameTextNode.setStyle("-fx-font: 10 arial;");
-                streetNameTextNode.setOnMouseClicked(contextMenuShowHandler);
+                streetNameTextNode.setOnMouseClicked(new EventHandler<MouseEvent>() {
+                    @Override
+                    public void handle(MouseEvent event) {
+                        if (event.getButton() == MouseButton.SECONDARY) {
+                            Platform.runLater(() -> contextMenu.show(pane, event.getScreenX(), event.getScreenY()));
+                        }else if (event.getButton() == MouseButton.PRIMARY) {
+                            listener.streetNameWasClicked(streetNameTextNode);
+                        }
+                        event.consume();
+                    }
+                });
                 pane.getChildren().add(streetNameTextNode);
             }
 
             Line line = new Line(first.getX(), first.getY(), second.getX(), second.getY());
             line.setStroke(this.color);
-
-            Line thickInvisibleLineInBehind = new Line(first.getX(), first.getY(), second.getX(), second.getY());
-            thickInvisibleLineInBehind.setStroke(Color.TRANSPARENT);
-            thickInvisibleLineInBehind.setStrokeWidth(20);
-
-            thickInvisibleLineInBehind.setOnMouseClicked(contextMenuShowHandler);
-
-            pane.getChildren().add(thickInvisibleLineInBehind);
             pane.getChildren().add(line);
         }
-
         pane.setPickOnBounds(false);
 
         return pane;
@@ -188,7 +154,7 @@ public class Street{
 
     public interface Listener{
         void trafficHasChanged(int trafficRate);
+        void streetEndingCircleWasClicked(Circle c);
+        void streetNameWasClicked(Text streetNameTextNode);
     }
-
-
 }

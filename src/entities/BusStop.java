@@ -2,11 +2,8 @@ package entities;
 
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
-import javafx.scene.shape.Line;
 import javafx.scene.shape.Polygon;
 import javafx.scene.text.Text;
 
@@ -37,6 +34,11 @@ public class BusStop extends Coordinate {
         vBox.setLayoutY(this.getY() - size);
         vBox.setAlignment(Pos.TOP_LEFT);
 
+        polygon.setOnMouseClicked(event -> {
+            listener.busStopWasClicked(polygon);
+            event.consume();
+        });
+
         return vBox;
     }
 
@@ -46,5 +48,13 @@ public class BusStop extends Coordinate {
         }
 
         return node;
+    }
+
+    public void setOnBusStopClickListener(OnBusStopClickListener listener) { this.listener = listener;}
+
+    private OnBusStopClickListener listener;
+
+    public interface OnBusStopClickListener {
+        void busStopWasClicked(Polygon polygon);
     }
 }

@@ -5,14 +5,9 @@ import java.util.List;
 
 public class RouteSchedule {
 
-   //   private List<LocalTime> departures;
    private List<RouteScheduleEntry> entries;
 
    private Bus bus = null;
-   private boolean isBusOnMap = false;
-
-   public RouteSchedule() {
-   }
 
    public RouteSchedule(List<RouteScheduleEntry> entries) {
       this.entries = entries;
@@ -36,14 +31,6 @@ public class RouteSchedule {
 
    public LocalTime getLastStopNonDelayedDepartureTime(){
       return entries.get(entries.size() - 1).getNonDelayedDepartureTime();
-   }
-
-   public boolean isBusOnMap() {
-      return isBusOnMap;
-   }
-
-   public void setBusOnMap(boolean busOnMap) {
-      isBusOnMap = busOnMap;
    }
 
    public Bus getBus() {

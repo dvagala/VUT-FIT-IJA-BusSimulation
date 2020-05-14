@@ -27,10 +27,6 @@ public class RouteScheduleEntry {
         return busStop;
     }
 
-    public void setBusStop(BusStop busStop) {
-        this.busStop = busStop;
-    }
-
     public boolean isDelayed() {
         return isDelayed;
     }
